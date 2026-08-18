@@ -244,7 +244,7 @@ doc = u"""<!DOCTYPE html>
     "guiones": "\n".join("<script>\n%s\n</script>" % g for g in guiones),
 }
 
-destino = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kit-ciberseguridad.html")
+destino = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
 with io.open(destino, "w", encoding="utf-8") as f:
     f.write(doc)
 print("Generado %s : %d bytes" % (destino, len(doc.encode("utf-8"))))

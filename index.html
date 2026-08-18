@@ -1,0 +1,2605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kit de Triaje · Ciberseguridad</title>
+<style>
+/* ================= LANZADOR ================= */
+
+  :root{
+    --k-fondo:#0d1117; --k-tinta:#c9d1d9; --k-panel:#161b22; --k-linea:#2a313c;
+    --k-verde:#3fb950; --k-tenue:#8b949e;
+    --k-mono:'Courier New',ui-monospace,monospace;
+    --k-sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  html,body{margin:0;padding:0;background:var(--k-fondo);color:var(--k-tinta);
+            font-family:var(--k-sans);min-height:100%}
+  #menu{max-width:720px;margin:0 auto;padding:2rem 1rem 4rem}
+  #menu header{text-align:center;margin-bottom:2rem}
+  #menu h1{font-size:1.7rem;color:#e6edf3;letter-spacing:-.01em;margin:0}
+  #menu h1::before{content:"> ";color:var(--k-verde);font-family:var(--k-mono)}
+  #menu header p{color:var(--k-tenue);font-size:.95rem;margin:.5rem auto 0;line-height:1.5;max-width:520px}
+  #rejilla{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+  @media (max-width:560px){ #rejilla{grid-template-columns:1fr} }
+  .tarjeta{background:var(--k-panel);border:1px solid var(--k-linea);border-radius:14px;
+           padding:1.2rem;cursor:pointer;text-align:left;font-family:var(--k-sans);
+           transition:border-color .15s,transform .1s;
+           box-shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.2)}
+  .tarjeta:hover{border-color:var(--k-verde);transform:translateY(-2px)}
+  .tarjeta:focus-visible{outline:3px solid var(--k-verde);outline-offset:2px}
+  .tarjeta .ic{font-size:1.8rem;display:block;margin-bottom:.6rem}
+  .tarjeta .nom{font-weight:700;font-size:1.02rem;color:#e6edf3;display:block}
+  .tarjeta .desc{font-size:.85rem;color:var(--k-tenue);margin-top:.35rem;line-height:1.4;display:block}
+  .tarjeta .flujo{font-family:var(--k-mono);font-size:.7rem;color:var(--k-verde);
+                  margin-top:.7rem;letter-spacing:.03em;display:block}
+  #pie{margin-top:2rem;font-size:.78rem;color:var(--k-tenue);text-align:center;line-height:1.5}
+
+  #barra{display:none;align-items:center;gap:.6rem;padding:.7rem 1rem;background:var(--k-panel);
+         border-bottom:1px solid var(--k-linea);position:sticky;top:0;z-index:99}
+  #barra.visible{display:flex}
+  #volver{background:#21262d;color:var(--k-tinta);border:1px solid var(--k-linea);border-radius:8px;
+          padding:.45rem .9rem;font-family:var(--k-sans);font-weight:600;font-size:.85rem;cursor:pointer}
+  #volver:hover{border-color:var(--k-verde)}
+  #volver:focus-visible{outline:3px solid var(--k-verde);outline-offset:2px}
+  #tituloVista{font-weight:700;font-size:.95rem;color:#e6edf3;font-family:var(--k-mono)}
+  .pane{display:none}
+  .pane.activo{display:block}
+
+
+/* ===== ESTILOS DE LAS HERRAMIENTAS (cada uno limitado a su #appN) ===== */
+/* ===== Analizador de Cabeceras ===== */
+/* ====== Infografía clara: los semáforos mandan ====== */
+#app0{
+    --fondo:#0d1117;
+    --tinta:#c9d1d9;
+    --panel:#161b22;
+    --linea:#2a313c;
+    --verde:#3fb950;  --verde-suave:#12261a;
+    --ambar:#d29922;  --ambar-suave:#2a2110;
+    --rojo:#f85149;   --rojo-suave:#2c1618;
+    --azul:#58a6ff;   --azul-suave:#132844;
+    --violeta:#bc8cff;--violeta-suave:#22183a;
+    --gris:#8b949e;   --gris-suave:#21262d;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+#app0, #app0 *{box-sizing:border-box;margin:0;padding:0}
+#app0{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+#app0 .contenedor{max-width:880px;margin:0 auto}
+#app0 header{text-align:center;margin-bottom:1.6rem}
+#app0 .pildoras{display:flex;justify-content:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
+#app0 .pildora{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .7rem;border-radius:99px}
+#app0 .p-verde{background:var(--verde-suave);color:var(--verde)}
+#app0 .p-ambar{background:var(--ambar-suave);color:var(--ambar)}
+#app0 .p-rojo{background:var(--rojo-suave);color:var(--rojo)}
+#app0 h1{font-size:1.65rem;color:#e6edf3}
+#app0 h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}
+#app0 header p{color:var(--tenue);font-size:.95rem;margin-top:.4rem}
+#app0 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:1.2rem;margin-bottom:1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+#app0 label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+#app0 textarea{width:100%;min-height:140px;resize:vertical;font-family:var(--mono);font-size:.82rem;border:1px solid var(--linea);border-radius:10px;padding:.8rem;background:#0d1117;color:var(--tinta)}
+#app0 textarea:focus{outline:2px solid var(--verde)}
+#app0 .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+#app0 button{font-family:var(--sans);font-weight:600;font-size:.88rem;padding:.6rem 1.3rem;border-radius:10px;cursor:pointer;border:1px solid transparent}
+#app0 #btnAnalizar{background:var(--verde);color:#0d1117}
+#app0 #btnAnalizar:hover{background:#4fd162}
+#app0 .btn-sec{background:var(--gris-suave);color:var(--tinta);border-color:var(--linea)}
+#app0 .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+#app0 button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}/* ====== Semáforo grande de veredicto ====== */
+#app0 #resumen{display:none}
+#app0 .semaforos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem}
+#app0 .luz{border-radius:12px;padding:1rem;text-align:center;border:2px solid}
+#app0 .luz .metodo{font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+#app0 .luz .estado{font-size:1.5rem;font-weight:800;margin:.2rem 0}
+#app0 .luz .detalle{font-size:.72rem;line-height:1.35;word-break:break-word}
+#app0 .luz.ok{background:var(--verde-suave);border-color:var(--verde);color:var(--verde)}
+#app0 .luz.mal{background:var(--rojo-suave);border-color:var(--rojo);color:var(--rojo)}
+#app0 .luz.neutro{background:var(--ambar-suave);border-color:var(--ambar);color:var(--ambar)}
+#app0 .luz.na{background:var(--gris-suave);border-color:var(--gris);color:var(--gris)}
+#app0 .veredicto-global{display:flex;align-items:center;gap:1rem;border-radius:12px;padding:1rem 1.2rem;margin-top:1rem;border:2px solid}
+#app0 .veredicto-global .circulo{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#0d1117;font-weight:800}
+#app0 .veredicto-global strong{display:block;font-size:1.05rem}
+#app0 .veredicto-global span{font-size:.85rem;color:var(--tinta)}
+#app0 .vg-ok{background:var(--verde-suave);border-color:var(--verde)}
+#app0 .vg-ok .circulo{background:var(--verde)}
+#app0 .vg-ok strong{color:var(--verde)}
+#app0 .vg-mal{background:var(--rojo-suave);border-color:var(--rojo)}
+#app0 .vg-mal .circulo{background:var(--rojo)}
+#app0 .vg-mal strong{color:var(--rojo)}
+#app0 .vg-neutro{background:var(--ambar-suave);border-color:var(--ambar)}
+#app0 .vg-neutro .circulo{background:var(--ambar)}
+#app0 .vg-neutro strong{color:var(--ambar)}/* ====== Cara a cara de remitentes ====== */
+#app0 #remitentes{display:none}
+#app0 .cara-a-cara{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+  @media (max-width:640px){
+#app0 .cara-a-cara{grid-template-columns:1fr} }
+#app0 .tarjeta-rem{border-radius:12px;padding:1rem;border:2px solid var(--linea);background:#0d1117}
+#app0 .tarjeta-rem h3{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:.4rem}
+#app0 .tarjeta-rem .dir{font-family:var(--mono);font-size:.85rem;word-break:break-all;color:#e6edf3}
+#app0 .tarjeta-rem .dom{margin-top:.4rem;font-weight:700;font-size:.92rem}
+#app0 .franja{margin-top:.8rem;border-radius:10px;padding:.7rem 1rem;font-size:.88rem;font-weight:600;border:2px solid}
+#app0 .franja.ok{background:var(--verde-suave);border-color:var(--verde);color:var(--verde)}
+#app0 .franja.mal{background:var(--rojo-suave);border-color:var(--rojo);color:var(--rojo)}
+#app0 .franja.reenvio{background:var(--violeta-suave);border-color:var(--violeta);color:var(--violeta)}/* ====== Línea de tiempo del viaje ====== */
+#app0 #viaje{display:none}
+#app0 .tiempo{position:relative;margin-left:14px;border-left:3px solid var(--linea);padding-left:1.1rem}
+#app0 .salto{position:relative;margin-bottom:.9rem;border-radius:12px;padding:.8rem 1rem;border:2px solid var(--linea);background:#0d1117}
+#app0 .salto::before{content:"";position:absolute;left:calc(-1.1rem - 3px - 7px);top:1rem;width:14px;height:14px;border-radius:50%;background:var(--gris);border:3px solid var(--fondo)}
+#app0 .salto.confianza{border-color:var(--verde);background:var(--verde-suave)}
+#app0 .salto.confianza::before{background:var(--verde)}
+#app0 .salto.reenviador{border-color:var(--violeta);background:var(--violeta-suave)}
+#app0 .salto.reenviador::before{background:var(--violeta)}
+#app0 .salto .quien{font-weight:700;font-size:.92rem;word-break:break-all;color:#e6edf3}
+#app0 .salto .meta{font-size:.78rem;color:var(--tenue);margin-top:.25rem;word-break:break-all}
+#app0 .salto .etiqueta{display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .5rem;border-radius:99px;margin-bottom:.3rem}
+#app0 .et-confianza{background:var(--verde);color:#0d1117}
+#app0 .et-reenviador{background:var(--violeta);color:#0d1117}
+#app0 .et-origen{background:var(--gris);color:#0d1117}
+#app0 .delta{font-size:.72rem;color:var(--tenue);margin:.2rem 0 .7rem .2rem}
+#app0 .delta.lento{color:var(--ambar);font-weight:700}/* ====== Banderas y explicaciones ====== */
+#app0 #banderas{display:none}
+#app0 .bandera{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.75rem 1rem;margin-top:.6rem;font-size:.9rem;border:2px solid}
+#app0 .bandera .icono{flex-shrink:0;font-weight:800}
+#app0 .b-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+#app0 .b-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+#app0 .b-violeta{background:var(--violeta-suave);border-color:var(--violeta);color:#d2a8ff}
+#app0 .b-verde{background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+#app0 .bandera code{font-family:var(--mono);background:#010409;padding:.05rem .35rem;border-radius:4px;border:1px solid var(--linea);font-size:.82rem;color:var(--verde)}
+#app0 details{margin-top:.7rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+#app0 summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+#app0 details[open] summary{border-bottom:1px solid var(--linea)}
+#app0 details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.5;color:#adbac7}
+#app0 details .cuerpo b{color:#e6edf3}
+#app0 #otrosDatos{display:none}
+#app0 .fila-dato{display:flex;gap:.6rem;padding:.45rem 0;border-bottom:1px dashed var(--linea);font-size:.85rem}
+#app0 .fila-dato:last-child{border-bottom:none}
+#app0 .fila-dato .k{flex:0 0 130px;font-weight:700;color:var(--tenue)}
+#app0 .fila-dato .v{font-family:var(--mono);word-break:break-all;font-size:.8rem;color:var(--tinta)}
+#app0 footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+
+
+/* ===== Expansor de Enlaces ===== */
+
+#app1{
+    --fondo:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --rojo:#f85149;  --rojo-suave:#2c1618;
+    --azul:#58a6ff;  --azul-suave:#132844;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --gris:#8b949e;  --gris-suave:#21262d;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+#app1, #app1 *{box-sizing:border-box;margin:0;padding:0}
+#app1{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+#app1 .contenedor{max-width:880px;margin:0 auto}
+#app1 header{text-align:center;margin-bottom:1.8rem;padding:0 .5rem}
+#app1 h1{font-size:1.6rem;letter-spacing:-.01em;color:#e6edf3}
+#app1 h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}
+#app1 header p{color:var(--tenue);font-size:.95rem;margin-top:.5rem;line-height:1.5;max-width:620px;margin-left:auto;margin-right:auto}
+#app1 .paso-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--verde);color:#0d1117;font-weight:800;font-size:.9rem;margin-right:.55rem;flex-shrink:0;box-shadow:0 2px 6px rgba(63,185,80,.3)}
+#app1 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:16px;padding:1.3rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25)}
+#app1 .panel h2{font-size:1.05rem;display:flex;align-items:center;margin-bottom:.9rem;color:#e6edf3}
+#app1 label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+#app1 input[type=text], #app1 textarea{width:100%;font-family:var(--mono);font-size:.85rem;border:1px solid var(--linea);border-radius:10px;padding:.7rem .8rem;background:#0d1117;color:var(--tinta)}
+#app1 textarea{min-height:150px;resize:vertical}
+#app1 input:focus, #app1 textarea:focus{outline:2px solid var(--verde)}
+#app1 .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+#app1 button{font-family:var(--sans);font-weight:600;font-size:.88rem;padding:.6rem 1.3rem;border-radius:10px;cursor:pointer;border:1px solid transparent}
+#app1 .btn-pri{background:var(--verde);color:#0d1117}
+#app1 .btn-pri:hover{background:#4fd162}
+#app1 .btn-sec{background:var(--gris-suave);color:var(--tinta);border-color:var(--linea)}
+#app1 .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+#app1 button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+#app1 .comando{position:relative;background:#010409;border:1px solid var(--linea);color:#7ee787;border-radius:10px;padding:.95rem 1rem 2.6rem;font-family:var(--mono);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere;word-break:break-word;margin-top:.6rem}
+#app1 .comando .copiar{position:absolute;bottom:.55rem;right:.55rem;background:var(--gris-suave);color:var(--tinta);border:1px solid var(--linea);font-size:.72rem;font-weight:600;padding:.35rem .8rem;border-radius:6px;transition:background .15s}
+#app1 .comando .copiar:hover{background:#2d333b}
+#app1 .aviso-priv{display:flex;gap:.7rem;align-items:flex-start;background:var(--ambar-suave);border:2px solid var(--ambar);color:#e3b341;border-radius:10px;padding:.75rem 1rem;font-size:.88rem;margin-top:.8rem}
+#app1 .aviso-priv .ic{font-weight:800;flex-shrink:0}
+#app1 details{margin-top:.7rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+#app1 summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+#app1 details[open] summary{border-bottom:1px solid var(--linea)}
+#app1 details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.55;color:#adbac7}
+#app1 details .cuerpo b{color:#e6edf3}
+#app1 details .cuerpo code{font-family:var(--mono);background:#010409;border:1px solid var(--linea);border-radius:4px;padding:.05rem .35rem;font-size:.8rem;color:var(--verde)}/* Cadena de saltos */
+#app1 #resultado{display:none}
+#app1 .salto{border:2px solid var(--linea);border-radius:12px;padding:.95rem 1rem;background:#0d1117;position:relative}
+#app1 .salto.acortador{border-color:var(--violeta);background:var(--violeta-suave)}
+#app1 .salto.final-ok{border-color:var(--verde);background:var(--verde-suave)}
+#app1 .salto.final-mal{border-color:var(--rojo);background:var(--rojo-suave)}
+#app1 .salto .cab{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+#app1 .badge{font-size:.7rem;font-weight:800;letter-spacing:.04em;padding:.25rem .6rem;border-radius:99px;color:#0d1117;white-space:nowrap}
+#app1 .bg-verde{background:var(--verde)}
+#app1 .bg-ambar{background:var(--ambar)}
+#app1 .bg-rojo{background:var(--rojo)}
+#app1 .bg-azul{background:var(--azul)}
+#app1 .bg-violeta{background:var(--violeta)}
+#app1 .bg-gris{background:var(--gris)}
+#app1 .salto .url{font-family:var(--mono);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere;word-break:break-word;margin-top:.5rem;background:rgba(255,255,255,.04);border:1px solid var(--linea);border-radius:7px;padding:.4rem .55rem;color:#e6edf3}
+#app1 .salto .nota{font-size:.78rem;color:var(--tenue);margin-top:.35rem}
+#app1 .flecha{text-align:center;color:var(--gris);font-size:1.1rem;padding:.4rem 0;display:flex;align-items:center;justify-content:center;gap:.4rem}
+#app1 .flecha span{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+#app1 .bandera{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.8rem 1rem;margin-top:.6rem;font-size:.9rem;line-height:1.5;border:2px solid}
+#app1 .bandera .icono{flex-shrink:0;font-weight:800;font-size:1rem;line-height:1.4}
+#app1 .bandera .texto{min-width:0;flex:1}
+#app1 .b-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+#app1 .b-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+#app1 .b-verde{background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+#app1 .b-azul{background:var(--azul-suave);border-color:var(--azul);color:#a5d6ff}
+#app1 .bandera code{font-family:var(--mono);background:rgba(1,4,9,.7);padding:.05rem .35rem;border-radius:4px;border:1px solid var(--linea);font-size:.82rem;overflow-wrap:anywhere;word-break:break-word}
+#app1 .bandera .url-destino{display:block;font-family:var(--mono);font-size:.82rem;background:#010409;border:1px solid var(--linea);border-radius:7px;padding:.45rem .6rem;margin:.4rem 0;overflow-wrap:anywhere;word-break:break-word;line-height:1.5;color:var(--verde)}
+#app1 footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+
+
+/* ===== Detector de Homógrafos ===== */
+
+#app2{
+    --papel:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --azul:#58a6ff;
+    --rojo:#f85149; --rojo-suave:#2c1618;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --naranja:#db8033;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+  }
+#app2, #app2 *{box-sizing:border-box;margin:0;padding:0}
+#app2{background:var(--papel);color:var(--tinta);font-family:Georgia,'Times New Roman',serif;min-height:100vh;padding:2rem 1rem 4rem}
+#app2 .contenedor{max-width:840px;margin:0 auto}
+#app2 header{border-bottom:3px double var(--verde);padding-bottom:1rem;margin-bottom:1.5rem}
+#app2 .expediente{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--verde)}
+#app2 h1{font-size:1.7rem;font-weight:700;margin-top:.3rem;color:#e6edf3}
+#app2 header p{font-size:.92rem;color:var(--tenue);margin-top:.4rem;max-width:64ch}
+#app2 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:6px;padding:1.2rem;margin-bottom:1.2rem}
+#app2 label{display:block;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+#app2 textarea{width:100%;min-height:70px;resize:vertical;font-family:var(--mono);font-size:1rem;border:1px solid var(--linea);border-radius:4px;padding:.7rem;color:var(--tinta);background:#0d1117}
+#app2 textarea:focus{outline:2px solid var(--verde);outline-offset:1px}
+#app2 .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+#app2 button{font-family:var(--mono);font-size:.85rem;letter-spacing:.05em;padding:.6rem 1.2rem;border-radius:4px;cursor:pointer;border:1px solid var(--linea)}
+#app2 #btnAnalizar{background:var(--verde);color:#0d1117;border-color:var(--verde);font-weight:700}
+#app2 #btnAnalizar:hover{background:#4fd162}
+#app2 .btn-secundario{background:transparent;color:var(--tinta)}
+#app2 .btn-secundario:hover{background:var(--gris-suave,#21262d);border-color:var(--verde)}
+#app2 button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}/* Marcas personalizadas */
+#app2 .marcas-fila{display:flex;gap:.6rem;margin-top:.4rem}
+#app2 .marcas-fila input{flex:1;font-family:var(--mono);font-size:.9rem;border:1px solid var(--linea);border-radius:4px;padding:.5rem .7rem;background:#0d1117;color:var(--tinta)}
+#app2 .marcas-fila input:focus{outline:2px solid var(--verde)}
+#app2 .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+#app2 .chip{font-family:var(--mono);font-size:.78rem;background:var(--violeta-suave);border:1px solid var(--violeta);color:var(--violeta);border-radius:12px;padding:.2rem .3rem .2rem .7rem;display:flex;align-items:center;gap:.3rem}
+#app2 .chip button{border:none;background:none;color:var(--violeta);font-size:.9rem;padding:0 .3rem;cursor:pointer}
+#app2 .nota-mini{font-size:.75rem;color:var(--tenue);font-family:var(--mono);margin-top:.5rem}
+#app2 #medidor{display:none}
+#app2 .score-fila{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
+#app2 .score-num{font-family:var(--mono);font-size:3rem;font-weight:700;line-height:1}
+#app2 .score-nivel{font-family:var(--mono);font-size:.95rem;letter-spacing:.1em;text-transform:uppercase}
+#app2 .barra-fondo{height:14px;background:#21262d;border-radius:7px;margin-top:.8rem;overflow:hidden;border:1px solid var(--linea)}
+#app2 .barra-relleno{height:100%;width:0;border-radius:7px;transition:width .5s ease}
+  @media (prefers-reduced-motion: reduce){
+#app2 .barra-relleno{transition:none} }
+#app2 .n-limpio{color:var(--verde)}
+#app2 .f-limpio{background:var(--verde)}
+#app2 .n-bajo{color:var(--verde)}
+#app2 .f-bajo{background:var(--verde)}
+#app2 .n-medio{color:var(--ambar)}
+#app2 .f-medio{background:var(--ambar)}
+#app2 .n-alto{color:var(--naranja)}
+#app2 .f-alto{background:var(--naranja)}
+#app2 .n-critico{color:var(--rojo)}
+#app2 .f-critico{background:var(--rojo)}
+#app2 .veredicto{display:none;border-radius:6px;padding:1rem 1.2rem;margin-bottom:1.2rem;border:1px solid;font-family:var(--mono)}
+#app2 .veredicto.peligro{display:block;background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+#app2 .veredicto.limpio{display:block;background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+#app2 .veredicto.aviso{display:block;background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+#app2 .veredicto strong{font-size:1.05rem;display:block;margin-bottom:.3rem}
+#app2 .veredicto span{font-size:.85rem;display:block}
+#app2 .veredicto ul{font-size:.85rem;margin:.4rem 0 0 1.2rem}
+#app2 #bloqueDominio{display:none}
+#app2 .dominio-linea{font-family:var(--mono);font-size:1.05rem;word-break:break-all;padding:.6rem .8rem;background:#0d1117;border:1px dashed var(--linea);border-radius:4px;color:#e6edf3}
+#app2 .dominio-linea .sub{color:var(--tenue)}
+#app2 .dominio-linea .efectivo{color:var(--rojo);font-weight:700;text-decoration:underline}
+#app2 .dato{font-family:var(--mono);font-size:.8rem;color:var(--tenue);margin-top:.5rem;word-break:break-all}
+#app2 .dato b{color:#e6edf3}
+#app2 .barra-navegador{margin-top:.7rem;border:1px solid var(--linea);border-radius:20px;background:#010409;padding:.45rem .9rem;font-family:var(--mono);font-size:.88rem;word-break:break-all;color:var(--verde)}
+#app2 .leccion-candado{font-size:.78rem;color:var(--tenue);font-family:var(--mono);margin-top:.5rem;border-left:3px solid var(--ambar);padding-left:.6rem}
+#app2 .rejilla{display:flex;flex-wrap:wrap;gap:6px;margin-top:.9rem}
+#app2 .celda{min-width:52px;padding:.45rem .35rem;text-align:center;border:1px solid var(--linea);border-radius:4px;background:#0d1117;font-family:var(--mono)}
+#app2 .celda .car{font-size:1.3rem;display:block;line-height:1.2;min-height:1.3em;color:#e6edf3}
+#app2 .celda .cp{font-size:.6rem;color:var(--tenue);display:block;margin-top:.15rem}
+#app2 .celda .scr{font-size:.6rem;display:block;letter-spacing:.05em}
+#app2 .celda.mala{background:var(--rojo-suave);border-color:var(--rojo)}
+#app2 .celda.mala .car, #app2 .celda.mala .scr{color:var(--rojo);font-weight:700}
+#app2 .celda.invisible{background:var(--violeta-suave);border-color:var(--violeta)}
+#app2 .celda.invisible .car, #app2 .celda.invisible .scr{color:var(--violeta);font-weight:700}
+#app2 .celda.idn{background:var(--ambar-suave);border-color:var(--ambar)}
+#app2 .celda.idn .car, #app2 .celda.idn .scr{color:var(--ambar)}
+#app2 .celda.sep{opacity:.55}
+#app2 #bloqueSenales{display:none}
+#app2 .senal{display:flex;gap:.8rem;align-items:flex-start;border-left:4px solid var(--rojo);background:var(--rojo-suave);padding:.7rem .9rem;border-radius:0 4px 4px 0;margin-top:.7rem;font-size:.92rem}
+#app2 .senal.s-media{border-color:var(--ambar);background:var(--ambar-suave)}
+#app2 .senal.s-invisible{border-color:var(--violeta);background:var(--violeta-suave)}
+#app2 .senal .puntos{font-family:var(--mono);font-weight:700;flex-shrink:0;min-width:3.2rem;text-align:right}
+#app2 .senal code{font-family:var(--mono);background:#010409;padding:.05rem .35rem;border-radius:3px;border:1px solid var(--linea);color:var(--verde)}
+#app2 #avisoCopiado{display:none;font-family:var(--mono);font-size:.78rem;color:var(--verde);margin-top:.5rem}
+#app2 footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);font-family:var(--mono);text-align:center}
+
+
+/* ===== Verificador de Archivos ===== */
+
+#app3{
+    /* Modo oscuro cómodo: fondo gris muy oscuro (no negro puro, que fatiga),
+       verde menta como acento (no neón, que vibra), texto gris claro (no blanco puro). */
+    --fondo:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --rojo:#f85149;  --rojo-suave:#2c1618;
+    --azul:#58a6ff;  --azul-suave:#132844;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --gris:#8b949e;  --gris-suave:#21262d;
+    --tenue:#8b949e;                     /* texto secundario */
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+#app3, #app3 *{box-sizing:border-box;margin:0;padding:0}
+#app3{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+#app3 .contenedor{max-width:880px;margin:0 auto}
+#app3 header{text-align:center;margin-bottom:1.6rem;padding:0 .5rem}
+#app3 h1{font-size:1.55rem;letter-spacing:-.01em;color:#e6edf3}
+#app3 h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}/* guiño terminal, discreto */
+#app3 header p{color:var(--tenue);font-size:.95rem;margin-top:.5rem;line-height:1.5;max-width:640px;margin:.5rem auto 0}
+#app3 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:16px;padding:1.3rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25)}
+#app3 label.tit{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.7rem}/* Zona de carga */
+#app3 .dropzone{border:2px dashed var(--linea);border-radius:14px;padding:2rem 1rem;text-align:center;background:#0d1117;transition:border-color .15s,background .15s;cursor:pointer}
+#app3 .dropzone.hover{border-color:var(--verde);background:var(--verde-suave)}
+#app3 .dropzone .ic{font-size:2rem;display:block;margin-bottom:.5rem}
+#app3 .dropzone .grande{font-weight:700;font-size:1rem;color:#e6edf3}
+#app3 .dropzone .chico{font-size:.82rem;color:var(--tenue);margin-top:.3rem}
+#app3 input[type=file]{display:none}
+#app3 .botones{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap;justify-content:center}
+#app3 button{font-family:var(--sans);font-weight:600;font-size:.85rem;padding:.55rem 1.1rem;border-radius:10px;cursor:pointer;border:1px solid var(--linea)}
+#app3 .btn-sec{background:var(--gris-suave);color:var(--tinta)}
+#app3 .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+#app3 button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+#app3 .ejemplos{margin-top:1rem;font-size:.8rem;color:var(--tenue);text-align:center}
+#app3 .ejemplos b{display:block;margin-bottom:.4rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue)}/* Veredicto grande */
+#app3 #resultado{display:none}
+#app3 .veredicto{display:flex;align-items:center;gap:1rem;border-radius:14px;padding:1.1rem 1.2rem;border:2px solid;margin-bottom:1rem}
+#app3 .veredicto .circulo{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#0d1117;font-weight:800}
+#app3 .veredicto .txt strong{display:block;font-size:1.1rem;line-height:1.2}
+#app3 .veredicto .txt span{font-size:.88rem;line-height:1.4;display:block;margin-top:.25rem;color:var(--tinta)}
+#app3 .v-ok{background:var(--verde-suave);border-color:var(--verde)}
+#app3 .v-ok .circulo{background:var(--verde)}
+#app3 .v-ok strong{color:var(--verde)}
+#app3 .v-mal{background:var(--rojo-suave);border-color:var(--rojo)}
+#app3 .v-mal .circulo{background:var(--rojo)}
+#app3 .v-mal strong{color:var(--rojo)}
+#app3 .v-neutro{background:var(--ambar-suave);border-color:var(--ambar)}
+#app3 .v-neutro .circulo{background:var(--ambar)}
+#app3 .v-neutro strong{color:var(--ambar)}/* Cara a cara: dice ser vs. es */
+#app3 .comparativa{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem}
+  @media (max-width:560px){
+#app3 .comparativa{grid-template-columns:1fr} }
+#app3 .tarjeta{border:2px solid var(--linea);border-radius:12px;padding:.9rem 1rem;background:#0d1117}
+#app3 .tarjeta h3{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:.4rem}
+#app3 .tarjeta .val{font-family:var(--mono);font-size:1rem;font-weight:700;word-break:break-all;color:#e6edf3}
+#app3 .tarjeta.res-ok{border-color:var(--verde);background:var(--verde-suave)}
+#app3 .tarjeta.res-ok .val{color:var(--verde)}
+#app3 .tarjeta.res-mal{border-color:var(--rojo);background:var(--rojo-suave)}
+#app3 .tarjeta.res-mal .val{color:var(--rojo)}/* Ficha */
+#app3 .fila{display:flex;gap:.6rem;padding:.4rem 0;border-bottom:1px dashed var(--linea);font-size:.86rem}
+#app3 .fila:last-child{border-bottom:none}
+#app3 .fila .k{flex:0 0 130px;font-weight:700;color:var(--tenue)}
+#app3 .fila .v{font-family:var(--mono);word-break:break-all;color:var(--tinta)}/* Careo didáctico de firmas */
+#app3 .compara-firma{display:none;border:2px solid var(--ambar);background:var(--ambar-suave);border-radius:12px;padding:1rem;margin-bottom:1rem}
+#app3 .compara-firma .titulo{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ambar);margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
+#app3 .cf-fila{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem}
+#app3 .cf-fila:last-of-type{margin-bottom:0}
+#app3 .cf-etq{flex:0 0 42%;font-size:.8rem;line-height:1.3}
+#app3 .cf-etq b{display:block;color:#e6edf3}
+#app3 .cf-etq span{color:var(--tenue);font-size:.74rem}
+#app3 .cf-bytes{flex:1;font-family:var(--mono);font-size:.9rem;font-weight:700;padding:.5rem .6rem;border-radius:8px;letter-spacing:.03em;word-break:break-all}
+#app3 .cf-bytes .asc{display:block;font-size:.72rem;font-weight:400;opacity:.7;margin-top:.1rem}
+#app3 .cf-esperada .cf-bytes{background:#0d1117;border:1px solid var(--linea);color:var(--verde)}
+#app3 .cf-real .cf-bytes{background:var(--rojo);color:#0d1117}
+#app3 .cf-veredicto{margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--ambar);font-size:.85rem;font-weight:600;color:var(--ambar);text-align:center}
+#app3 .aviso-extra{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.75rem .9rem;margin-bottom:.6rem;font-size:.85rem;line-height:1.5;border:1px solid}
+#app3 .aviso-extra .ic{flex-shrink:0;font-weight:800}
+#app3 .aviso-extra b{color:#e6edf3}
+#app3 .av-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+#app3 .av-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}/* Hex dump: el protagonista. 8 bytes/fila para caber en móvil sin scroll */
+#app3 .hexwrap{overflow-x:auto;background:#010409;border:1px solid var(--linea);border-radius:12px;padding:.8rem .6rem}
+#app3 table.hex{border-collapse:collapse;font-family:var(--mono);font-size:.8rem;color:#8fb39a;margin:0 auto}
+#app3 table.hex td{padding:.1rem .22rem;text-align:center}
+#app3 table.hex .off{color:#4d5b52;padding-right:.5rem;text-align:right;-webkit-user-select:none;user-select:none}
+#app3 table.hex .asc-cell{padding-left:.5rem;border-left:1px solid #21372a}
+#app3 table.hex .byte{color:#7ee787}/* bytes en verde terminal suave */
+#app3 table.hex .ch{color:#4d7a56}
+#app3 table.hex .byte.magia{background:var(--ambar);color:#010409;border-radius:3px;font-weight:700}
+#app3 table.hex .ch.magia{background:var(--ambar);color:#010409;border-radius:3px;font-weight:700;padding:0 1px}
+  @media (min-width:560px){
+#app3 table.hex{font-size:.88rem}
+#app3 table.hex td{padding:.12rem .35rem} }
+#app3 .leyenda{font-size:.78rem;color:var(--tenue);margin-top:.7rem;display:flex;align-items:center;gap:.4rem}
+#app3 .leyenda .muestra{display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--ambar);flex-shrink:0}
+#app3 details{margin-top:.9rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+#app3 summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+#app3 details[open] summary{border-bottom:1px solid var(--linea)}
+#app3 details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.55;color:#adbac7}
+#app3 details .cuerpo b{color:#e6edf3}
+#app3 details .cuerpo code{font-family:var(--mono);background:#010409;border:1px solid var(--linea);border-radius:4px;padding:.05rem .35rem;font-size:.8rem;color:var(--verde)}
+#app3 details .cuerpo table{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.8rem}
+#app3 details .cuerpo table td{padding:.3rem .4rem;border-bottom:1px solid var(--linea)}
+#app3 details .cuerpo table td:first-child{font-family:var(--mono);color:var(--verde);white-space:nowrap}
+#app3 footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+
+</style>
+</head>
+<body>
+
+<div id="barra">
+  <button id="volver">← Volver</button>
+  <span id="tituloVista"></span>
+</div>
+
+<div id="menu">
+  <header>
+    <h1>Kit de Triaje</h1>
+    <p>Cuatro herramientas para analizar correos, enlaces y archivos sospechosos.
+       Todo el análisis ocurre en tu dispositivo.</p>
+  </header>
+  <div id="rejilla">
+      <button class="tarjeta" data-ir="app0">
+        <span class="ic">✉️</span>
+        <span class="nom">Analizador de Cabeceras</span>
+        <span class="desc">¿Quién envió de verdad este correo? Lee SPF, DKIM y DMARC y el viaje del mensaje.</span>
+        <span class="flujo">correo sospechoso →</span>
+      </button>
+      <button class="tarjeta" data-ir="app1">
+        <span class="ic">🔗</span>
+        <span class="nom">Expansor de Enlaces</span>
+        <span class="desc">¿A dónde lleva de verdad un enlace corto? Sigue los saltos hasta el destino real.</span>
+        <span class="flujo">→ enlace del correo →</span>
+      </button>
+      <button class="tarjeta" data-ir="app2">
+        <span class="ic">🎭</span>
+        <span class="nom">Detector de Homógrafos</span>
+        <span class="desc">¿El dominio imita a una marca con letras falsas? Caza suplantaciones en URLs.</span>
+        <span class="flujo">→ URL de destino →</span>
+      </button>
+      <button class="tarjeta" data-ir="app3">
+        <span class="ic">📄</span>
+        <span class="nom">Verificador de Archivos</span>
+        <span class="desc">¿El adjunto es lo que dice ser? Magic bytes, doble extensión y contenido activo.</span>
+        <span class="flujo">→ adjunto del correo</span>
+      </button>
+  </div>
+  <div id="pie">Archivo único y autocontenido · sin iframes · funciona sin conexión.</div>
+</div>
+
+<section class="pane" id="app0">
+<div class="contenedor">
+  <header>
+    <div class="pildoras">
+      <span class="pildora p-verde">PASA</span>
+      <span class="pildora p-ambar">DUDOSO</span>
+      <span class="pildora p-rojo">FALLA</span>
+    </div>
+    <h1>Analizador de Cabeceras de Correo</h1>
+    <p>Pega las cabeceras completas de un correo (en Proton: ⋯ → «Ver cabeceras») y descubre quién lo envió de verdad, qué camino siguió y si las comprobaciones antifraude lo respaldan.</p>
+  </header>
+
+  <section class="panel">
+    <label for="entrada">Cabeceras del correo</label>
+    <textarea id="entrada" spellcheck="false" placeholder="Pega aquí todo el texto de las cabeceras…"></textarea>
+    <div class="botones">
+      <button id="btnAnalizar">Analizar cabeceras</button>
+      <button id="btnEjemplo" class="btn-sec">Cargar ejemplo real</button>
+      <button id="btnLimpiar" class="btn-sec">Limpiar</button>
+    </div>
+  </section>
+
+  <!-- Semáforos de autenticación -->
+  <section id="resumen" class="panel">
+    <label>Comprobaciones antifraude · veredicto de tu proveedor</label>
+    <div id="semaforos" class="semaforos"></div>
+    <div id="veredictoGlobal"></div>
+    <details>
+      <summary>¿Qué significan SPF, DKIM y DMARC?</summary>
+      <div class="cuerpo">
+        <b>SPF</b> comprueba que el servidor que envió el correo tiene permiso del dominio remitente para hacerlo (una lista publicada en el DNS). Valida el remitente <i>técnico</i> (el del sobre).<br><br>
+        <b>DKIM</b> es una firma criptográfica: el dominio firma el mensaje y cualquiera puede verificar con su clave pública que no se alteró por el camino y que ese dominio lo respalda.<br><br>
+        <b>DMARC</b> es la regla que ata todo al remitente que TÚ ves (el <code>From</code>): exige que SPF o DKIM pasen <i>y</i> que su dominio coincida con el del From. Es la comprobación que más importa contra la suplantación.<br><br>
+        Estos veredictos no los calcula esta app: los calculó tu proveedor (Proton, Gmail…) al recibir el correo, consultando el DNS en ese momento, y los dejó escritos en la cabecera <code>Authentication-Results</code>. Aquí los leemos e interpretamos — que es exactamente lo que hace un analista.
+      </div>
+    </details>
+  </section>
+
+  <!-- Cara a cara de remitentes -->
+  <section id="remitentes" class="panel">
+    <label>¿Quién dice ser vs. quién es? · el cara a cara de remitentes</label>
+    <div class="cara-a-cara">
+      <div class="tarjeta-rem">
+        <h3>Lo que TÚ ves (From)</h3>
+        <div id="fromDir" class="dir">—</div>
+        <div class="dom">Dominio: <span id="fromDom">—</span></div>
+      </div>
+      <div class="tarjeta-rem">
+        <h3>Remitente técnico (Return-Path)</h3>
+        <div id="rpDir" class="dir">—</div>
+        <div class="dom">Dominio: <span id="rpDom">—</span></div>
+      </div>
+    </div>
+    <div id="franjaRemitentes"></div>
+    <div id="replyTo"></div>
+    <details>
+      <summary>¿Por qué hay dos remitentes?</summary>
+      <div class="cuerpo">
+        El <b>From</b> es como el remite escrito a mano en un sobre: quien envía puede poner lo que quiera, y es lo único que te muestra tu app de correo. El <b>Return-Path</b> es el remitente del "sobre" técnico: la dirección que usan los servidores entre sí. Cuando divergen sin motivo, sospecha. Hay un motivo legítimo frecuente: los <b>reenviadores y servicios de alias</b> (SimpleLogin, addy.io, Firefox Relay…) están obligados a reescribir el Return-Path para no romper SPF — esta app lo detecta y no te alarma en falso.
+      </div>
+    </details>
+  </section>
+
+  <!-- Línea de tiempo -->
+  <section id="viaje" class="panel">
+    <label>El viaje del correo · de abajo (origen) a arriba (tu buzón)</label>
+    <div id="tiempo" class="tiempo"></div>
+    <details>
+      <summary>¿Cómo leer este viaje y por qué unos saltos son de fiar y otros no?</summary>
+      <div class="cuerpo">
+        Cada servidor por el que pasa un correo añade su línea <code>Received</code> <b>encima</b> de las anteriores, así que la ruta se lee de abajo hacia arriba. Punto clave del modelo de confianza: <b>las líneas de abajo las pudo inventar el remitente</b> — un atacante puede fabricar saltos falsos antes de enviar. Solo son verificables las líneas que añadió <b>tu propio proveedor</b> (en verde), porque esas no las controla el atacante. Por eso esta app marca la "zona de confianza": todo lo que queda por debajo debe leerse como <i>afirmaciones sin verificar</i>, no como hechos.
+      </div>
+    </details>
+  </section>
+
+  <!-- Banderas -->
+  <section id="banderas" class="panel">
+    <label>Señales y observaciones</label>
+    <div id="listaBanderas"></div>
+  </section>
+
+  <!-- Otros datos -->
+  <section id="otrosDatos" class="panel">
+    <label>Ficha del mensaje</label>
+    <div id="ficha"></div>
+  </section>
+
+  <footer>Herramienta educativa · Todo el análisis ocurre en tu navegador; nada se envía a internet.</footer>
+</div>
+</section>
+
+<section class="pane" id="app1">
+<div class="contenedor">
+  <header>
+    <h1>Expansor de Enlaces Acortados</h1>
+    <p>Descubre a dónde lleva de verdad un enlace corto <b>antes de abrirlo en tu navegador</b>: la red la pone <code>curl</code>, el análisis lo pone esta app — en local.</p>
+  </header>
+
+  <!-- PASO 1: generar el comando -->
+  <section class="panel">
+    <h2><span class="paso-num">1</span> Genera tu comando</h2>
+    <label for="urlCorta">Enlace acortado (no lo abras, solo cópialo aquí)</label>
+    <input type="text" id="urlCorta" placeholder="https://bit.ly/xxxxx" spellcheck="false" autocomplete="off">
+    <div id="cajaComando" style="display:none">
+      <div class="comando"><span id="txtComando"></span><button class="copiar" id="btnCopiarCmd">Copiar</button></div>
+      <div class="aviso-priv"><span class="ic">⚠</span><span><b>Antes de ejecutarlo, entiende qué implica:</b> este comando CONTACTA con los servidores de la cadena. El acortador —y el destino final— verán tu IP y sabrán que alguien comprobó el enlace. Con <code>-I</code> solo pedimos cabeceras (no descargamos la página), pero el contacto existe. Si el enlace te llegó en un ataque dirigido a ti personalmente, no lo expandas desde tu red: usa un servicio intermedio como <code>urlscan.io</code> (que lo visita él por ti, a cambio de que el enlace quede en su base pública).</span></div>
+    </div>
+    <details>
+      <summary>¿Qué hace cada parte del comando?</summary>
+      <div class="cuerpo">
+        <code>curl</code> — herramienta de línea de comandos para hacer peticiones web. Viene incluida en Windows 10/11, macOS y Linux; en Android se instala con la app <b>Termux</b> (<code>pkg install curl</code>).<br><br>
+        <code>-s</code> — <i>silent</i>: oculta la barra de progreso para que la salida quede limpia.<br>
+        <code>-I</code> — pide solo las <b>cabeceras</b> (petición HEAD), no el contenido. Menos ruido y menos exposición.<br>
+        <code>-L</code> — <i>location</i>: sigue las redirecciones automáticamente, saltando de una a la siguiente.<br>
+        <code>--max-redirs 10</code> — límite de saltos, para que un bucle malicioso de redirecciones infinitas no te deje colgado.<br>
+        <code>-A "Mozilla/5.0..."</code> — <i>agent</i>: le dice a curl que se presente ante el servidor como si fuera un navegador Firefox, en vez de anunciarse como "curl". Muchos servidores protegidos (Cloudflare y similares) rechazan las peticiones que dicen venir de curl con un <code>403 Prohibido</code> aunque el enlace funcione perfectamente en un navegador. Este disfraz evita esos falsos rechazos. No es infalible —algunas protecciones exigen más pruebas de ser humano—, pero resuelve la mayoría.<br>
+        Las comillas alrededor de la URL evitan que caracteres como <code>&amp;</code> o <code>?</code> los interprete tu terminal en vez de curl.<br><br>
+        <b>Nota Windows:</b> en PowerShell escribe <code>curl.exe</code> (con el .exe), porque <code>curl</code> a secas es un alias de otra cosa.
+      </div>
+    </details>
+  </section>
+
+  <!-- PASO 2: pegar la salida -->
+  <section class="panel">
+    <h2><span class="paso-num">2</span> Pega aquí lo que devolvió curl</h2>
+    <textarea id="salida" spellcheck="false" placeholder="HTTP/2 301&#10;location: https://...&#10;..."></textarea>
+    <div class="botones">
+      <button id="btnAnalizar" class="btn-pri">Analizar la cadena</button>
+      <button id="btnEjemplo" class="btn-sec">Cargar ejemplo</button>
+      <button id="btnLimpiar" class="btn-sec">Limpiar</button>
+    </div>
+  </section>
+
+  <!-- PASO 3: resultado -->
+  <section id="resultado" class="panel">
+    <h2><span class="paso-num">3</span> El recorrido del enlace</h2>
+    <div id="cadena"></div>
+    <div id="banderas"></div>
+    <details>
+      <summary>¿Qué significan los códigos 301, 302, 307…?</summary>
+      <div class="cuerpo">
+        Los códigos <b>3xx</b> son redirecciones: el servidor responde "no estoy aquí, ve a esta otra dirección" (cabecera <code>Location</code>).<br><br>
+        <code>301</code> / <code>308</code> — movida <b>permanente</b>. Típica de acortadores y migraciones de dominio.<br>
+        <code>302</code> / <code>307</code> — movida <b>temporal</b>. La favorita de los kits de phishing, porque les permite cambiar el destino en cualquier momento sin tocar el enlace corto ya repartido.<br>
+        <code>303</code> — "ve allí con una petición GET". Rara en este contexto.<br><br>
+        Y los finales de cadena: <code>200</code> — página entregada, fin del viaje. <code>403</code>/<code>404</code>/<code>410</code> — bloqueado, no existe o retirado (los acortadores desactivan enlaces denunciados: un 404 aquí puede significar que el fraude ya fue cazado). <code>5xx</code> — el servidor destino está roto o rechazando.
+      </div>
+    </details>
+  </section>
+
+  <footer>Herramienta educativa · El análisis ocurre en tu navegador; la única conexión a internet la hace curl cuando TÚ lo ejecutas.</footer>
+</div>
+</section>
+
+<section class="pane" id="app2">
+<div class="contenedor">
+  <header>
+    <div class="expediente">Unicode · IDN · Typosquatting · Combosquatting · Open Redirect · v4</div>
+    <h1>Detector de Phishing y Homógrafos</h1>
+    <p>Analiza dominio, subdominios, ruta y parámetros: homóglifos, caracteres invisibles, suplantación por esqueleto, erratas Damerau-Levenshtein con detección de tecla vecina, marcas con texto añadido, marcas en subdominios, redirecciones abiertas, acortadores, TLD de riesgo y trucos de estructura.</p>
+  </header>
+
+  <section class="panel">
+    <label for="entrada">URL a analizar</label>
+    <textarea id="entrada" spellcheck="false" placeholder="Ejemplos: google.com/url?q=http://evil.ru · payapl.com · bit.ly/x7K2m"></textarea>
+    <div class="botones">
+      <button id="btnAnalizar">Analizar URL</button>
+      <button id="btnLimpiar" class="btn-secundario">Limpiar</button>
+      <button id="btnCopiar" class="btn-secundario" style="display:none">Copiar informe</button>
+    </div>
+    <div id="avisoCopiado">Informe copiado al portapapeles.</div>
+  </section>
+
+  <section class="panel">
+    <label for="marcaNueva">Marcas propias a vigilar (tu empresa, tu banco, tu universidad…)</label>
+    <div class="marcas-fila">
+      <input id="marcaNueva" type="text" placeholder="ej: miempresa" autocomplete="off">
+      <button id="btnMarca" class="btn-secundario">Añadir</button>
+    </div>
+    <div id="chips" class="chips"></div>
+    <div class="nota-mini">Se vigilan junto a las ~70 marcas incorporadas. La lista dura mientras la página esté abierta; se vacía al recargar.</div>
+  </section>
+
+  <section id="medidor" class="panel">
+    <label>Puntuación de riesgo</label>
+    <div class="score-fila">
+      <div id="scoreNum" class="score-num">0</div>
+      <div id="scoreNivel" class="score-nivel"></div>
+    </div>
+    <div class="barra-fondo"><div id="scoreBarra" class="barra-relleno"></div></div>
+  </section>
+
+  <div id="veredicto" class="veredicto" role="alert"></div>
+
+  <section id="bloqueDominio" class="panel">
+    <label>Dominio analizado · el dominio real está subrayado</label>
+    <div id="dominio" class="dominio-linea"></div>
+    <div id="explicaEfectivo" class="dato"></div>
+    <div id="punycode" class="dato"></div>
+    <label style="margin-top:1rem">Así lo mostraría la barra de tu navegador</label>
+    <div class="barra-navegador"><span id="vistaNavegador"></span></div>
+    <div id="notaNavegador" class="dato"></div>
+    <div class="leccion-candado">Recuerda: el candado 🔒 del navegador solo certifica que la conexión va cifrada (HTTPS), NO que el sitio sea legítimo. La mayoría del phishing actual usa HTTPS válido.</div>
+    <div id="rejilla" class="rejilla"></div>
+  </section>
+
+  <section id="bloqueSenales" class="panel">
+    <label>Señales detectadas y puntos que aporta cada una</label>
+    <div id="senales"></div>
+  </section>
+
+  <footer>Herramienta educativa · El análisis ocurre solo en tu navegador, no se envía nada a internet.</footer>
+</div>
+</section>
+
+<section class="pane" id="app3">
+<div class="contenedor">
+  <header>
+    <h1>Verificador de Tipo Real de Archivo</h1>
+    <p>La extensión (<code>.pdf</code>, <code>.jpg</code>) es solo una etiqueta que cualquiera puede cambiar. Los primeros bytes de un archivo — sus <b>magic bytes</b> — son su ADN real. Esta app los compara: te dice si el archivo <b>es lo que dice ser</b>.</p>
+  </header>
+
+  <section class="panel">
+    <label class="tit">Elige un archivo (no se sube a ningún sitio: se lee en tu móvil)</label>
+    <div class="dropzone" id="dropzone">
+      <span class="ic">📄</span>
+      <span class="grande">Toca para elegir un archivo</span>
+      <span class="chico">o arrástralo aquí · se leen solo los primeros bytes</span>
+    </div>
+    <input type="file" id="fileInput" accept="*/*">
+    <div class="ejemplos">
+      <b>¿Sin archivo a mano? Prueba estos casos</b>
+      <div class="botones">
+        <button class="btn-sec" data-ej="pdf-ok">PDF auténtico</button>
+        <button class="btn-sec" data-ej="exe-fake">"factura.pdf" trucado</button>
+        <button class="btn-sec" data-ej="png-ok">Imagen PNG</button>
+        <button class="btn-sec" data-ej="zip-doc">Documento .docx</button>
+        <button class="btn-sec" data-ej="doble-ext">Doble extensión</button>
+        <button class="btn-sec" data-ej="lnk-fake">Atajo .lnk disfrazado</button>
+        <button class="btn-sec" data-ej="macro-doc">Excel con macros</button>
+        <button class="btn-sec" data-ej="zip-cif">ZIP con contraseña</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultado" class="panel">
+    <div id="veredicto"></div>
+    <div class="comparativa">
+      <div class="tarjeta" id="tarjDice">
+        <h3>Dice ser (por su nombre)</h3>
+        <div class="val" id="valDice">—</div>
+      </div>
+      <div class="tarjeta" id="tarjEs">
+        <h3>Es en realidad (por sus bytes)</h3>
+        <div class="val" id="valEs">—</div>
+      </div>
+    </div>
+
+    <div id="comparaFirma" class="compara-firma"></div>
+    <div id="avisos" style="display:none"></div>
+
+    <label class="tit">Los bytes del archivo, en crudo</label>
+    <div class="hexwrap"><table class="hex" id="hexTabla"></table></div>
+    <div class="leyenda"><span class="muestra"></span> resaltados: los magic bytes que identifican el tipo real</div>
+
+    <div id="fichaFila" style="margin-top:1.1rem"></div>
+
+    <details>
+      <summary>¿Qué son los magic bytes y qué firmas conoce esta app?</summary>
+      <div class="cuerpo">
+        Casi todo formato binario empieza con una <b>firma fija</b> que pone el programa que crea el archivo. No depende del nombre: un PDF empieza por <code>25 50 44 46</code> (que en texto es <code>%PDF</code>) aunque lo renombres a <code>.jpg</code>. Los formatos de solo texto (<code>.txt</code>, <code>.csv</code>, <code>.html</code>) no tienen firma, porque son texto puro.<br><br>
+        El truco de ataque clásico: renombrar un ejecutable (<code>.exe</code>) a <code>.pdf</code> o <code>.jpg</code> para que confíes y lo abras. La extensión miente, pero los magic bytes no: un ejecutable de Windows siempre empieza por <code>4D 5A</code> (<code>MZ</code>), pase lo que pase con su nombre. Esta app caza justo eso.<br><br>
+        <b>Firmas que reconoce:</b>
+        <table>
+          <tr><td>25 50 44 46</td><td>PDF</td></tr>
+          <tr><td>89 50 4E 47</td><td>PNG</td></tr>
+          <tr><td>FF D8 FF</td><td>JPEG</td></tr>
+          <tr><td>47 49 46 38</td><td>GIF</td></tr>
+          <tr><td>42 4D</td><td>BMP</td></tr>
+          <tr><td>RIFF…WEBP</td><td>WebP</td></tr>
+          <tr><td>50 4B 03 04</td><td>ZIP (y docx, xlsx, pptx, apk, jar…)</td></tr>
+          <tr><td>52 61 72 21</td><td>RAR</td></tr>
+          <tr><td>37 7A BC AF</td><td>7-Zip</td></tr>
+          <tr><td>1F 8B</td><td>GZIP</td></tr>
+          <tr><td>D0 CF 11 E0</td><td>Office antiguo (.doc, .xls, .ppt)</td></tr>
+          <tr><td>49 44 33 / FF FB</td><td>MP3</td></tr>
+          <tr><td>…ftyp</td><td>MP4 / vídeo</td></tr>
+          <tr><td>4D 5A</td><td>⚠ Ejecutable Windows (.exe, .dll)</td></tr>
+          <tr><td>7F 45 4C 46</td><td>⚠ Ejecutable Linux (ELF)</td></tr>
+          <tr><td>CA FE BA BE</td><td>⚠ Ejecutable Java / Mach-O</td></tr>
+          <tr><td>23 21 (#!)</td><td>⚠ Script ejecutable</td></tr>
+        </table>
+      </div>
+    </details>
+    <details>
+      <summary>Límites honestos de esta comprobación</summary>
+      <div class="cuerpo">
+        Los magic bytes prueban el <b>formato</b>, no la <b>inocencia</b>. Un PDF con firma correcta puede seguir siendo malicioso (llevar un exploit dentro), y un ZIP legítimo puede contener malware. Esto solo detecta el <b>engaño de disfraz</b>: cuando la extensión no cuadra con el formato real.<br><br>
+        Tampoco mira más allá de los primeros bytes: no analiza el contenido completo, no descomprime, no ejecuta nada. Y algunos formatos comparten firma (todo lo basado en ZIP: docx, xlsx, apk…), así que ahí solo puede decirte "es un ZIP o derivado", no cuál exactamente sin mirar dentro.
+      </div>
+    </details>
+  </section>
+
+  <footer>Herramienta educativa · El archivo se lee localmente en tu navegador; nada se envía a internet.</footer>
+</div>
+</section>
+
+<script>
+
+(function(){
+  var menu = document.getElementById("menu"),
+      barra = document.getElementById("barra"),
+      titulo = document.getElementById("tituloVista");
+  function abrir(amb, nombre){
+    menu.style.display = "none";
+    var todas = document.querySelectorAll(".pane");
+    for (var i=0;i<todas.length;i++) todas[i].className = "pane";
+    document.getElementById(amb).className = "pane activo";
+    titulo.textContent = nombre;
+    barra.className = "visible";
+    window.scrollTo(0,0);
+  }
+  function volver(){
+    var todas = document.querySelectorAll(".pane");
+    for (var i=0;i<todas.length;i++) todas[i].className = "pane";
+    barra.className = "";
+    menu.style.display = "block";
+    window.scrollTo(0,0);
+  }
+  var btns = document.querySelectorAll(".tarjeta");
+  for (var i=0;i<btns.length;i++){
+    (function(b){
+      b.addEventListener("click", function(){
+        abrir(b.getAttribute("data-ir"), b.querySelector(".nom").textContent);
+      });
+    })(btns[i]);
+  }
+  document.getElementById("volver").addEventListener("click", volver);
+})();
+
+</script>
+
+<script>
+(function(){
+  /* 'document' falso: solo ve dentro de #app0, asi los IDs repetidos
+     entre herramientas no se pisan y el codigo original no cambia. */
+  var __raiz = window.document.getElementById("app0");
+  var document = {
+    getElementById   : function(id){ return __raiz.querySelector("#" + id); },
+    querySelector    : function(s){ return __raiz.querySelector(s); },
+    querySelectorAll : function(s){ return __raiz.querySelectorAll(s); },
+    createElement    : function(t){ return window.document.createElement(t); },
+    createTextNode   : function(t){ return window.document.createTextNode(t); },
+    execCommand      : function(){ return window.document.execCommand.apply(window.document, arguments); },
+    addEventListener : function(){ return window.document.addEventListener.apply(window.document, arguments); },
+    documentElement  : window.document.documentElement,
+    get body(){ return __raiz; }
+  };
+  /* ---- codigo original de la herramienta, sin tocar ---- */
+
+"use strict";
+
+/* =====================================================================
+   1. PARSEO DE CABECERAS
+   Las cabeceras largas continúan en la línea siguiente con un espacio
+   o tabulador al principio ("plegado"). Primero las desplegamos.
+   ===================================================================== */
+function desplegar(raw){
+  return raw.replace(/\r\n/g,"\n").replace(/\n[ \t]+/g," ");
+}
+function parsearCabeceras(raw){
+  const lista = [];                     // conserva el ORDEN (importa en Received)
+  for (const linea of desplegar(raw).split("\n")){
+    const m = linea.match(/^([A-Za-z0-9\-]+):\s*(.*)$/);
+    if (m) lista.push({nombre: m[1].toLowerCase(), valor: m[2].trim()});
+  }
+  return lista;
+}
+function todas(lista, nombre){ return lista.filter(h=>h.nombre===nombre).map(h=>h.valor); }
+function primera(lista, nombre){ const v = todas(lista, nombre); return v.length ? v[0] : null; }
+
+/* =====================================================================
+   2. UTILIDADES DE DIRECCIONES Y DOMINIOS
+   ===================================================================== */
+function extraerDireccion(v){
+  if (!v) return null;
+  const m = v.match(/<([^>]+)>/);
+  if (m) return m[1].trim();
+  const m2 = v.match(/[^\s"<>]+@[^\s"<>]+/);
+  return m2 ? m2[0].replace(/[;,]$/,"") : null;
+}
+function dominioDe(addr){
+  if (!addr) return null;
+  const i = addr.lastIndexOf("@");
+  return i===-1 ? null : addr.slice(i+1).toLowerCase();
+}
+/* Dominio registrable: las 2 últimas etiquetas (suficiente aquí) */
+function registrable(dom){
+  if (!dom) return null;
+  const et = dom.split(".");
+  return et.length<=2 ? dom : et.slice(-2).join(".");
+}
+
+/* Servicios de alias/reenvío conocidos: reescriben remitentes LEGÍTIMAMENTE */
+const REENVIADORES = ["simplelogin","passinbox.com","slmail.me","addy.io","anonaddy",
+  "mozmail.com","relay.firefox.com","duck.com","privaterelay.appleid.com","forwardemail.net"];
+function esReenviador(texto){
+  if (!texto) return null;
+  const t = texto.toLowerCase();
+  return REENVIADORES.find(r => t.includes(r)) || null;
+}
+
+/* =====================================================================
+   3. PARSEO DE Authentication-Results
+   Formato: "servidor; metodo=resultado propiedades..."
+   Puede haber varias cabeceras, cada una con uno o más métodos.
+   ===================================================================== */
+function parsearAuth(valores){
+  const resultados = [];  // {servidor, metodo, resultado, dominio, extra}
+  for (const v of valores){
+    const partes = v.split(";");
+    const servidor = partes[0].trim().split(/\s/)[0];
+    for (const p of partes.slice(1)){
+      const m = p.trim().match(/^(spf|dkim|dmarc|arc)=([a-z]+)/i);
+      if (!m) continue;
+      const metodo = m[1].toLowerCase(), resultado = m[2].toLowerCase();
+      const domM = p.match(/header\.(?:d|from)=([^\s;]+)/i) || p.match(/smtp\.mailfrom=([^\s;]+)/i);
+      const dominio = domM ? domM[1].replace(/^@/,"") : null;
+      resultados.push({servidor, metodo, resultado, dominio, extra: p.trim()});
+    }
+  }
+  return resultados;
+}
+/* El mejor resultado por método (pass gana; si no hay pass, el peor manda) */
+function resumenAuth(resultados, metodo){
+  const del = resultados.filter(r=>r.metodo===metodo);
+  if (!del.length) return null;
+  const pass = del.find(r=>r.resultado==="pass");
+  if (pass) return pass;
+  const fail = del.find(r=>["fail","permerror"].includes(r.resultado));
+  return fail || del[0];
+}
+
+/* =====================================================================
+   4. PARSEO DE Received (el viaje)
+   ===================================================================== */
+function parsearReceived(valores){
+  return valores.map(v=>{
+    const de = (v.match(/from\s+([^\s(;]+)/i)||[])[1] || null;
+    const ip = (v.match(/\[(\d{1,3}(?:\.\d{1,3}){3})\]/)||[])[1] || null;
+    const por = (v.match(/by\s+([^\s(;]+)/i)||[])[1] || null;
+    const tls = /TLS/i.test(v);
+    const fechaTxt = v.split(";").pop().trim();
+    const fecha = new Date(fechaTxt);
+    return {de, ip, por, tls, fecha: isNaN(fecha)?null:fecha, crudo:v};
+  });
+}
+
+/* =====================================================================
+   5. ANÁLISIS PRINCIPAL
+   ===================================================================== */
+function analizar(){
+  const raw = document.getElementById("entrada").value;
+  if (!raw.trim()){ alert("Pega primero unas cabeceras."); return; }
+  const H = parsearCabeceras(raw);
+  const $ = id => document.getElementById(id);
+
+  /* ---- Datos base ---- */
+  const fromAddr = extraerDireccion(primera(H,"from"));
+  const rpAddr   = extraerDireccion(primera(H,"return-path"));
+  const replyAddr= extraerDireccion(primera(H,"reply-to"));
+  const fromDom = dominioDe(fromAddr), rpDom = dominioDe(rpAddr), replyDom = dominioDe(replyAddr);
+  const auth = parsearAuth(todas(H,"authentication-results"));
+  const authPrevios = parsearAuth(todas(H,"arc-authentication-results")); // veredictos ANTES del reenvío
+  const received = parsearReceived(todas(H,"received"));
+  const banderas = [];
+  function bandera(nivel, icono, html){ banderas.push({nivel, icono, html}); }
+
+  /* ¿Quién es tu proveedor? El servidor que firmó Authentication-Results */
+  const proveedor = auth.length ? registrable(auth[0].servidor) : null;
+
+  /* ¿Hay un reenviador/alias por medio? */
+  const pistasReenvio = [rpAddr, primera(H,"x-simplelogin-type") ? "simplelogin" : null,
+    ...received.map(r=>r.de)].filter(Boolean).join(" ");
+  const reenviador = esReenviador(pistasReenvio);
+  const fromOriginal = extraerDireccion(primera(H,"x-simplelogin-original-from") || primera(H,"x-pm-original-from"));
+
+  /* ---- SEMÁFOROS ---- */
+  const semDiv = $("semaforos"); semDiv.innerHTML="";
+  const metodos = [
+    ["spf","SPF","¿El servidor emisor tenía permiso del dominio del sobre?"],
+    ["dkim","DKIM","¿La firma criptográfica del dominio es válida?"],
+    ["dmarc","DMARC","¿El dominio del From que ves está respaldado?"],
+    ["arc","ARC","¿Un reenvío conservó los veredictos originales?"]
+  ];
+  const estados = {};
+  metodos.forEach(([clave, titulo, descr])=>{
+    const r = resumenAuth(auth, clave);
+    estados[clave] = r ? r.resultado : null;
+    let clase="na", texto="—", detalle="No presente";
+    if (r){
+      if (r.resultado==="pass"){ clase="ok"; texto="PASA"; }
+      else if (["fail","permerror"].includes(r.resultado)){ clase="mal"; texto="FALLA"; }
+      else { clase="neutro"; texto=r.resultado.toUpperCase(); }
+      detalle = (r.dominio ? "dominio: "+r.dominio : descr);
+    } else if (clave==="arc"){ detalle="Sin reenvío o sin cadena ARC"; }
+    const div=document.createElement("div");
+    div.className="luz "+clase;
+    div.innerHTML="<div class='metodo'>"+titulo+"</div><div class='estado'>"+texto+"</div><div class='detalle'>"+escaparHTML(detalle)+"</div>";
+    semDiv.appendChild(div);
+  });
+
+  /* Veredicto global: DMARC manda */
+  const vg = $("veredictoGlobal");
+  let vgClase, vgIcono, vgTitulo, vgTexto;
+  if (estados.dmarc==="pass"){
+    vgClase="vg-ok"; vgIcono="✓"; vgTitulo="Remitente autenticado";
+    vgTexto="Tu proveedor verificó que el dominio del remitente respalda este correo. Ojo: autenticado significa que ES quien dice ser, no que sea buena gente — un estafador puede enviar desde su propio dominio bien configurado.";
+  } else if (estados.dmarc && estados.dmarc!=="pass" || estados.spf==="fail" || estados.dkim==="fail"){
+    vgClase="vg-mal"; vgIcono="✕"; vgTitulo="Autenticación fallida: alta sospecha de suplantación";
+    vgTexto="Alguna comprobación clave falló. El remitente visible probablemente NO envió este correo. No pulses enlaces ni respondas.";
+  } else {
+    vgClase="vg-neutro"; vgIcono="!"; vgTitulo="Autenticación incompleta";
+    vgTexto="Faltan comprobaciones o quedaron en resultado neutro. No es prueba de fraude, pero tampoco hay respaldo: extrema la cautela.";
+  }
+  vg.className="veredicto-global "+vgClase;
+  vg.innerHTML="<div class='circulo'>"+vgIcono+"</div><div><strong>"+vgTitulo+"</strong><span>"+vgTexto+"</span></div>";
+  $("resumen").style.display="block";
+
+  /* ---- CARA A CARA DE REMITENTES ---- */
+  $("fromDir").textContent = fromAddr || "(no encontrado)";
+  $("fromDom").textContent = fromDom || "—";
+  $("rpDir").textContent = rpAddr || "(no encontrado)";
+  $("rpDom").textContent = rpDom || "—";
+  const franja = $("franjaRemitentes");
+  if (fromDom && rpDom && registrable(fromDom)===registrable(rpDom)){
+    franja.className="franja ok";
+    franja.textContent="✓ Coinciden: el remitente visible y el técnico son del mismo dominio.";
+  } else if (reenviador){
+    franja.className="franja reenvio";
+    franja.innerHTML="⇄ Divergen, pero hay un motivo legítimo: un servicio de alias/reenvío ("+escaparHTML(reenviador)+") reescribió el remitente técnico, como exige el estándar para no romper SPF."+
+      (fromOriginal ? " Remitente original real: <b>"+escaparHTML(fromOriginal)+"</b>." : "");
+  } else if (fromDom && rpDom){
+    franja.className="franja mal";
+    franja.textContent="✕ Divergen sin motivo aparente: el correo dice venir de "+fromDom+" pero el sobre técnico es de "+rpDom+". Patrón clásico de suplantación.";
+  } else {
+    franja.className="franja mal";
+    franja.textContent="No se pudieron comparar (falta alguno de los dos).";
+  }
+  const rt = $("replyTo");
+  if (replyAddr && fromDom && replyDom && registrable(replyDom)!==registrable(fromDom)){
+    const rtReenvio = esReenviador(replyAddr);
+    rt.className = "franja "+(rtReenvio ? "reenvio" : "mal");
+    rt.style.display="block";
+    rt.innerHTML = rtReenvio
+      ? "⇄ El <b>Reply-To</b> apunta a tu alias ("+escaparHTML(replyDom)+"): así tu respuesta también viaja por el servicio de alias sin revelar tu correo real."
+      : "✕ El <b>Reply-To</b> apunta a otro dominio ("+escaparHTML(replyDom)+"): si respondes, tu mensaje NO va al remitente visible. Truco habitual en fraude del CEO y facturas falsas.";
+  } else { rt.style.display="none"; }
+  $("remitentes").style.display="block";
+
+  /* ---- LÍNEA DE TIEMPO (Received se lee de abajo arriba) ---- */
+  const tiempo = $("tiempo"); tiempo.innerHTML="";
+  const saltos = received.slice().reverse();   // ahora [0] = origen
+  saltos.forEach((s,i)=>{
+    const esProveedor = proveedor && ((s.por||"").includes(proveedor) || (s.por||"").includes("proton"));
+    const esFwd = esReenviador((s.de||"")+" "+(s.por||""));
+    const div=document.createElement("div");
+    div.className="salto"+(esProveedor?" confianza":esFwd?" reenviador":"");
+    const etiqueta = esProveedor
+      ? "<span class='etiqueta et-confianza'>Zona de confianza · tu proveedor</span>"
+      : esFwd
+      ? "<span class='etiqueta et-reenviador'>Reenviador de alias</span>"
+      : (i===0 ? "<span class='etiqueta et-origen'>Origen declarado · no verificable</span>"
+               : "<span class='etiqueta et-origen'>No verificable</span>");
+    div.innerHTML = etiqueta+
+      "<div class='quien'>"+escaparHTML(s.de||"(origen no declarado)")+(s.ip?" · "+s.ip:"")+"</div>"+
+      "<div class='meta'>recibido por <b>"+escaparHTML(s.por||"?")+"</b>"+
+      (s.fecha?" · "+s.fecha.toLocaleString():"")+
+      (s.tls?" · cifrado TLS ✓":" · <b>sin cifrar</b>")+"</div>";
+    tiempo.appendChild(div);
+    if (i < saltos.length-1 && s.fecha && saltos[i+1].fecha){
+      const seg = Math.round((saltos[i+1].fecha - s.fecha)/1000);
+      const d=document.createElement("div");
+      d.className="delta"+(seg>300?" lento":"");
+      d.textContent="↑ "+(seg<0?"¿fecha incoherente?":seg+" segundos hasta el siguiente salto"+(seg>300?" — retraso inusual":""));
+      tiempo.appendChild(d);
+    }
+  });
+  $("viaje").style.display="block";
+
+  /* ---- BANDERAS ---- */
+  if (reenviador){
+    bandera("violeta","⇄","Correo reenviado por un servicio de alias (<code>"+escaparHTML(reenviador)+"</code>). Esto reescribe remitentes de forma legítima; los veredictos del tramo original se conservan en la cadena ARC.");
+  }
+  if (authPrevios.length){
+    const dmarcPrevio = resumenAuth(authPrevios,"dmarc");
+    const spfPrevio = resumenAuth(authPrevios,"spf");
+    bandera(dmarcPrevio && dmarcPrevio.resultado==="pass" ? "verde" : "ambar","⧉",
+      "La cadena <b>ARC</b> guarda el veredicto de ANTES del reenvío: "+
+      (dmarcPrevio?("DMARC del remitente original (<code>"+escaparHTML(dmarcPrevio.dominio||"?")+"</code>): <b>"+dmarcPrevio.resultado+"</b>. "):"")+
+      (spfPrevio&&spfPrevio.dominio?("Enviado técnicamente por <code>"+escaparHTML(spfPrevio.dominio)+"</code>."):""));
+  }
+  if (estados.spf==="fail") bandera("rojo","✕","SPF falló: el servidor que envió el correo no tiene permiso del dominio del sobre.");
+  if (estados.dkim==="fail") bandera("rojo","✕","DKIM falló: la firma no valida — el mensaje se alteró o la firma es falsa.");
+  if (estados.dmarc && estados.dmarc!=="pass") bandera("rojo","✕","DMARC no pasó: el dominio visible del From no respalda este correo.");
+  if (!auth.length) bandera("ambar","!","No hay cabecera <code>Authentication-Results</code>: tu proveedor no dejó veredicto, o las cabeceras están incompletas. Sin ella, esta app no puede evaluar la autenticación.");
+  const sinTLS = received.some(r=>!r.tls);
+  if (sinTLS) bandera("ambar","!","Algún salto viajó sin cifrado TLS: el contenido pudo leerse en tránsito. Común en servidores antiguos; no implica fraude por sí solo.");
+  const subj = primera(H,"subject");
+  if (subj && /urgente|verifica|suspendid|bloquead|premio|factura pendiente/i.test(subj)){
+    bandera("ambar","!","El asunto usa lenguaje de presión («"+escaparHTML(subj)+"»). No es prueba técnica, pero acompaña a la mayoría del phishing.");
+  }
+  if (!banderas.length) bandera("verde","✓","Sin señales negativas: autenticación en orden y remitentes coherentes.");
+
+  const lb = $("listaBanderas"); lb.innerHTML="";
+  banderas.forEach(b=>{
+    const div=document.createElement("div");
+    div.className="bandera b-"+b.nivel;
+    div.innerHTML="<span class='icono'>"+b.icono+"</span><span>"+b.html+"</span>";
+    lb.appendChild(div);
+  });
+  $("banderas").style.display="block";
+
+  /* ---- FICHA ---- */
+  const ficha = $("ficha"); ficha.innerHTML="";
+  [["Asunto", subj],["Fecha", primera(H,"date")],["Message-Id", primera(H,"message-id")],
+   ["Para", extraerDireccion(primera(H,"to"))],
+   ["Remitente original", fromOriginal],
+   ["Saltos Received", String(received.length)]
+  ].forEach(([k,v])=>{
+    if (!v) return;
+    const div=document.createElement("div");
+    div.className="fila-dato";
+    div.innerHTML="<span class='k'>"+k+"</span><span class='v'>"+escaparHTML(v)+"</span>";
+    ficha.appendChild(div);
+  });
+  $("otrosDatos").style.display="block";
+}
+
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   6. EJEMPLO REAL EMBEBIDO (el correo AliExpress→SES→SimpleLogin→Proton,
+   anonimizado). Sirve para aprender sin tener un correo a mano.
+   ===================================================================== */
+const EJEMPLO = `Return-Path: <sl.reescrito.fyy2xbixcd4f4@passinbox.com>
+Delivered-To: usuario@proton.me
+Authentication-Results: mail.protonmail.ch; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=passinbox.com header.a=rsa-sha256
+Authentication-Results: mail.protonmail.ch; dmarc=pass (p=quarantine dis=none) header.from=passinbox.com
+Authentication-Results: mail.protonmail.ch; spf=pass smtp.mailfrom=passinbox.com
+Authentication-Results: mail.protonmail.ch; arc=pass smtp.remote-ip=79.135.107.167 arc.chain=:simplelogin.co
+Received: from mail-107167.simplelogin.co (mail-107167.simplelogin.co [79.135.107.167]) (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)) by mailinzur1015.protonmail.ch (Postfix) with ESMTPS id 4gLlrb1tb5z9vNQR for <usuario@proton.me>; Thu, 21 May 2026 11:03:27 +0000 (UTC)
+Arc-Authentication-Results: i=1; mail.protonmail.ch; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=notice.aliexpress.com header.a=rsa-sha256; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=amazonses.com header.a=rsa-sha256; dmarc=pass (p=quarantine dis=none) header.from=notice.aliexpress.com; spf=pass smtp.mailfrom=alibaba.notice.aliexpress.com
+Dkim-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=passinbox.com; s=dkim; t=1779361407; h=from:subject:date:to; bh=...; b=...
+Subject: Paquete 28018000771518699 entregado
+Message-Id: <010e019e4a3452c1@ap-southeast-1.amazonses.com>
+Date: Thu, 21 May 2026 11:03:23 +0000
+X-Simplelogin-Type: Forward
+X-Simplelogin-Envelope-From: 010e019e4a3452c1@alibaba.notice.aliexpress.com
+X-Simplelogin-Original-From: AliExpress <transaction@notice.aliexpress.com>
+From: AliExpress <transaction@notice.aliexpress.com>
+To: alias@passinbox.com
+Reply-To: "AliExpress" <transaction_at_notice_aliexpress_com@passinbox.com>
+X-Pm-Origin: external
+X-Pm-Spamscore: 0`;
+
+/* =====================================================================
+   7. EVENTOS
+   ===================================================================== */
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnEjemplo").addEventListener("click", ()=>{
+  document.getElementById("entrada").value = EJEMPLO;
+  analizar();
+});
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("entrada").value="";
+  ["resumen","remitentes","viaje","banderas","otrosDatos"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("entrada").focus();
+});
+
+})();
+
+</script>
+<script>
+(function(){
+  /* 'document' falso: solo ve dentro de #app1, asi los IDs repetidos
+     entre herramientas no se pisan y el codigo original no cambia. */
+  var __raiz = window.document.getElementById("app1");
+  var document = {
+    getElementById   : function(id){ return __raiz.querySelector("#" + id); },
+    querySelector    : function(s){ return __raiz.querySelector(s); },
+    querySelectorAll : function(s){ return __raiz.querySelectorAll(s); },
+    createElement    : function(t){ return window.document.createElement(t); },
+    createTextNode   : function(t){ return window.document.createTextNode(t); },
+    execCommand      : function(){ return window.document.execCommand.apply(window.document, arguments); },
+    addEventListener : function(){ return window.document.addEventListener.apply(window.document, arguments); },
+    documentElement  : window.document.documentElement,
+    get body(){ return __raiz; }
+  };
+  /* ---- codigo original de la herramienta, sin tocar ---- */
+
+"use strict";
+
+/* Acortadores conocidos (misma lista base que el detector de URLs) */
+const ACORTADORES = new Set(["bit.ly","tinyurl.com","t.co","goo.gl","ow.ly","is.gd","buff.ly",
+  "cutt.ly","rebrand.ly","shorturl.at","rb.gy","t.ly","tiny.cc","lnkd.in","s.id","v.gd",
+  "qr.ae","soo.gd","short.io","bl.ink","zpr.io"]);
+
+const CODIGOS = {
+  301:["bg-azul","Redirección permanente"], 308:["bg-azul","Redirección permanente"],
+  302:["bg-ambar","Redirección temporal"],  307:["bg-ambar","Redirección temporal"],
+  303:["bg-azul","Redirección (ver otro)"],
+  200:["bg-verde","Página entregada"],
+  403:["bg-rojo","Acceso prohibido"], 404:["bg-rojo","No existe"], 410:["bg-rojo","Retirado"],
+};
+function infoCodigo(c){
+  if (CODIGOS[c]) return CODIGOS[c];
+  if (c>=500) return ["bg-rojo","Error del servidor"];
+  if (c>=400) return ["bg-rojo","Error "+c];
+  if (c>=300) return ["bg-ambar","Redirección "+c];
+  return ["bg-gris","Código "+c];
+}
+function dominioDeURL(u){
+  try { return new URL(u).hostname.toLowerCase().replace(/^www\./,""); } catch(e){ return null; }
+}
+function registrable(dom){
+  if (!dom) return null;
+  const et = dom.split(".");
+  return et.length<=2 ? dom : et.slice(-2).join(".");
+}
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ============ PASO 1: generar el comando ============ */
+const inputURL = document.getElementById("urlCorta");
+inputURL.addEventListener("input", ()=>{
+  const v = inputURL.value.trim();
+  const caja = document.getElementById("cajaComando");
+  if (!v){ caja.style.display="none"; return; }
+  const conEsquema = /^https?:\/\//i.test(v) ? v : "https://"+v;
+  /* Saneado básico: comillas dentro de la URL romperían el comando */
+  const limpia = conEsquema.replace(/["'`\\]/g,"");
+  document.getElementById("txtComando").textContent = 'curl -sIL --max-redirs 10 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/128.0" "'+limpia+'"';
+  caja.style.display="block";
+});
+document.getElementById("btnCopiarCmd").addEventListener("click", ()=>{
+  const txt = document.getElementById("txtComando").textContent;
+  copiar(txt, document.getElementById("btnCopiarCmd"));
+});
+function copiar(txt, btn){
+  const listo = ()=>{ const t=btn.textContent; btn.textContent="✓ Copiado"; setTimeout(()=>btn.textContent=t,1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(listo).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); document.body.removeChild(ta); listo();
+  }
+}
+
+/* ============ PASO 2-3: parsear salida de curl -sIL ============
+   La salida son BLOQUES de cabeceras, uno por respuesta:
+     HTTP/2 301
+     location: https://...
+     (línea en blanco)
+     HTTP/2 200
+     ...
+   Troceamos por cada línea que empiece por "HTTP/". */
+function parsearCurl(raw){
+  const bloques = [];
+  let actual = null;
+  for (const linea of raw.replace(/\r\n/g,"\n").split("\n")){
+    const m = linea.match(/^HTTP\/[0-9.]+\s+(\d{3})/i);
+    if (m){
+      actual = {codigo: parseInt(m[1],10), location:null, server:null, tipo:null};
+      bloques.push(actual);
+      continue;
+    }
+    if (!actual) continue;
+    const h = linea.match(/^([A-Za-z\-]+):\s*(.*)$/);
+    if (!h) continue;
+    const nombre = h[1].toLowerCase(), valor = h[2].trim();
+    if (nombre==="location") actual.location = valor;
+    else if (nombre==="server") actual.server = valor;
+    else if (nombre==="content-type") actual.tipo = valor.split(";")[0];
+  }
+  return bloques;
+}
+
+function analizar(){
+  const raw = document.getElementById("salida").value;
+  if (!raw.trim()){ alert("Pega primero la salida de curl."); return; }
+  const bloques = parsearCurl(raw);
+  const cadena = document.getElementById("cadena");
+  const banderasDiv = document.getElementById("banderas");
+  cadena.innerHTML=""; banderasDiv.innerHTML="";
+  const banderas = [];
+  const bandera = (nivel,icono,html)=>banderas.push({nivel,icono,html});
+
+  if (!bloques.length){
+    cadena.innerHTML = "<div class='bandera b-ambar'><span class='icono'>!</span><span>No reconozco esto como salida de <code>curl -sIL</code>. Debe empezar por líneas tipo <code>HTTP/2 301</code>. Si curl no mostró nada, puede que el dominio no exista o que tu red bloquee la conexión.</span></div>";
+    document.getElementById("resultado").style.display="block";
+    return;
+  }
+
+  /* Reconstruir las URLs de cada salto. La primera es la que escribió
+     el usuario en el paso 1 (si la puso); las siguientes salen de Location.
+     Location puede ser RELATIVA ("/destino"): se resuelve contra la anterior. */
+  const urlInicial = inputURL.value.trim()
+    ? (/^https?:\/\//i.test(inputURL.value.trim()) ? inputURL.value.trim() : "https://"+inputURL.value.trim())
+    : null;
+  const urls = [urlInicial];
+  for (let i=0;i<bloques.length-1;i++){
+    const loc = bloques[i].location;
+    if (!loc){ urls.push(null); continue; }
+    try { urls.push(new URL(loc, urls[i] || "https://desconocido.invalido").href); }
+    catch(e){ urls.push(loc); }
+  }
+
+  const dominios = [];
+  bloques.forEach((b,i)=>{
+    const url = urls[i];
+    const dom = url ? dominioDeURL(url) : null;
+    if (dom) dominios.push(dom);
+    const esUltimo = i === bloques.length-1;
+    const [claseBadge, textoCodigo] = infoCodigo(b.codigo);
+    const esAcort = dom && ACORTADORES.has(dom);
+
+    const div = document.createElement("div");
+    let claseSalto = "salto";
+    if (esAcort) claseSalto += " acortador";
+    if (esUltimo) claseSalto += (b.codigo===200 ? " final-ok" : b.codigo>=400 ? " final-mal" : "");
+    div.className = claseSalto;
+    div.innerHTML =
+      "<div class='cab'>"+
+        "<span class='badge bg-gris'>Salto "+(i+1)+(esUltimo?" · FINAL":"")+"</span>"+
+        "<span class='badge "+claseBadge+"'>"+b.codigo+" · "+textoCodigo+"</span>"+
+        (esAcort ? "<span class='badge bg-violeta'>Acortador conocido</span>" : "")+
+      "</div>"+
+      "<div class='url'>"+escaparHTML(url || "(URL de este salto no reconstruible — pon el enlace en el paso 1)")+"</div>"+
+      ((b.server||b.tipo) ? "<div class='nota'>"+(b.server?"servidor: "+escaparHTML(b.server):"")+(b.server&&b.tipo?" · ":"")+(b.tipo?"contenido: "+escaparHTML(b.tipo):"")+"</div>" : "");
+    cadena.appendChild(div);
+
+    if (!esUltimo){
+      const f = document.createElement("div");
+      f.className="flecha";
+      f.innerHTML = "↓ <span>redirige a</span>";
+      cadena.appendChild(f);
+    }
+  });
+
+  /* ---------- Banderas ---------- */
+  const nRedirs = bloques.filter(b=>b.codigo>=300 && b.codigo<400).length;
+  const finalURL = urls[urls.length-1];
+  const finalDom = finalURL ? dominioDeURL(finalURL) : null;
+  const final = bloques[bloques.length-1];
+
+  if (finalURL){
+    bandera(final.codigo===200 ? "verde" : "ambar", "◎",
+      "<b>Destino real:</b><span class='url-destino'>"+escaparHTML(finalURL)+"</span>"+
+      (finalDom ? "Dominio <b>"+escaparHTML(finalDom)+"</b>. Copia esta URL en el <b>detector de URLs</b> (la otra app) para el análisis de suplantación completo: ese es su trabajo, no el de esta." : ""));
+  }
+  if (nRedirs >= 3){
+    bandera("ambar","!","Cadena larga: "+nRedirs+" redirecciones. Las campañas maliciosas encadenan saltos para despistar filtros y rotar destinos. Legítimo a veces (rastreadores de marketing hacen lo mismo), pero es señal de vigilancia.");
+  }
+  const acortEnCadena = dominios.filter(d=>ACORTADORES.has(d));
+  if (acortEnCadena.length >= 2){
+    bandera("rojo","✕","<b>Acortador dentro de acortador</b> ("+acortEnCadena.map(escaparHTML).join(" → ")+"). Casi nadie legítimo hace esto: es la técnica clásica para que el primer acortador no pueda inspeccionar ni bloquear el destino real.");
+  }
+  const bajaHTTP = bloques.some((b,i)=>b.location && b.location.toLowerCase().startsWith("http://"));
+  if (bajaHTTP){
+    bandera("rojo","✕","Algún salto redirige a <code>http://</code> sin cifrar: lo que hagas en esa página viaja en claro. Los sitios serios no degradan a HTTP en 2026.");
+  }
+  if (finalDom && /^\d{1,3}(\.\d{1,3}){3}$/.test(finalDom)){
+    bandera("rojo","✕","El destino final es una <b>IP cruda</b>, sin dominio. Rarísimo en servicios legítimos, habitual en infraestructura desechable de ataque.");
+  }
+  const servidorFinal = (final.server||"").toLowerCase();
+  if (final.codigo===403){
+    const pistaCF = servidorFinal.includes("cloudflare");
+    bandera("ambar","!","La cadena termina en <b>403 · Prohibido</b>, pero ojo: <b>esto NO suele significar que el enlace esté muerto</b>. Lo más habitual es que el servidor"+
+      (pistaCF ? " (protegido por <b>Cloudflare</b>, como ves arriba)" : "")+
+      " haya rechazado la petición por venir de <code>curl</code> en vez de un navegador de verdad. La misma página puede abrir sin problema en tu navegador. Para descartarlo, vuelve al paso 1: el comando ya incluye el disfraz <code>-A</code>, pero si algún servidor sigue devolviendo 403, es esta protección antibot, no el enlace. Fíjate en el dominio de destino y en si los parámetros parecen legítimos antes de dar nada por muerto.");
+  } else if (final.codigo===404 || final.codigo===410){
+    bandera("azul","i","La cadena muere en un <b>"+final.codigo+"</b> (no existe / retirado). En un dominio que reconozcas, lo más habitual es de lo más inocente: la página <b>caducó o se movió</b> — típico en enlaces cortos antiguos de campañas de marketing, sorteos o promociones ya terminadas. Solo si el dominio de destino ya parecía sospechoso cobra fuerza la otra lectura: que el acortador o el hosting hayan <b>desactivado el enlace por denuncias</b>, en cuyo caso llegarías tarde al fraude — la mejor noticia posible. Mira el dominio para saber en cuál de los dos casos estás.");
+  } else if (final.codigo>=400){
+    bandera("azul","i","La cadena termina en un <b>"+final.codigo+"</b>. Puede ser un enlace caído, un bloqueo del servidor, o una protección que rechaza a curl. No lo tomes como veredicto: contrasta el dominio de destino.");
+  }
+  if (final.codigo===200 && final.tipo==="text/html"){
+    bandera("azul","i","<b>Límite honesto:</b> curl ve las redirecciones HTTP, pero una página puede redirigir OTRA VEZ con JavaScript o <code>&lt;meta refresh&gt;</code> una vez cargada, y eso aquí no se ve. Si el destino \"final\" parece una página vacía o rara, sospecha de un salto extra invisible.");
+  }
+  if (!banderas.length){
+    bandera("verde","✓","Cadena corta y limpia. Recuerda igualmente pasar el destino final por el detector de URLs.");
+  }
+
+  banderas.forEach(b=>{
+    const div=document.createElement("div");
+    div.className="bandera b-"+b.nivel;
+    div.innerHTML="<span class='icono'>"+b.icono+"</span><span class='texto'>"+b.html+"</span>";
+    banderasDiv.appendChild(div);
+  });
+  document.getElementById("resultado").style.display="block";
+}
+
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("salida").value="";
+  document.getElementById("resultado").style.display="none";
+  document.getElementById("salida").focus();
+});
+
+/* Ejemplo sintético: bit.ly → acortador secundario → destino con IP y HTTP plano */
+document.getElementById("btnEjemplo").addEventListener("click", ()=>{
+  inputURL.value = "https://bit.ly/3xEjemplo";
+  inputURL.dispatchEvent(new Event("input"));
+  document.getElementById("salida").value =
+`HTTP/2 301
+server: cloudflare
+location: https://cutt.ly/promo-x9
+
+HTTP/2 302
+server: nginx
+location: http://185.220.101.44/login/santander/
+
+HTTP/1.1 200
+server: Apache/2.4.41
+content-type: text/html`;
+  analizar();
+});
+
+})();
+
+</script>
+<script>
+(function(){
+  /* 'document' falso: solo ve dentro de #app2, asi los IDs repetidos
+     entre herramientas no se pisan y el codigo original no cambia. */
+  var __raiz = window.document.getElementById("app2");
+  var document = {
+    getElementById   : function(id){ return __raiz.querySelector("#" + id); },
+    querySelector    : function(s){ return __raiz.querySelector(s); },
+    querySelectorAll : function(s){ return __raiz.querySelectorAll(s); },
+    createElement    : function(t){ return window.document.createElement(t); },
+    createTextNode   : function(t){ return window.document.createTextNode(t); },
+    execCommand      : function(){ return window.document.execCommand.apply(window.document, arguments); },
+    addEventListener : function(){ return window.document.addEventListener.apply(window.document, arguments); },
+    documentElement  : window.document.documentElement,
+    get body(){ return __raiz; }
+  };
+  /* ---- codigo original de la herramienta, sin tocar ---- */
+
+"use strict";
+
+/* =====================================================================
+   1. CONFUSABLES UNICODE
+   ===================================================================== */
+const CONFUSABLES = {
+  "а":"a","е":"e","о":"o","р":"p","с":"c","у":"y","х":"x","і":"i","ѕ":"s",
+  "ј":"j","һ":"h","ԁ":"d","ԛ":"q","ԝ":"w","ь":"b","г":"r","п":"n","м":"m",
+  "т":"t","к":"k","в":"b","н":"h","л":"n","и":"u","ё":"e","й":"n","ц":"u",
+  "ѡ":"w","ѵ":"v","ҫ":"c","ә":"e","ғ":"f","ұ":"y","ө":"o",
+  "А":"A","В":"B","Е":"E","К":"K","М":"M","Н":"H","О":"O","Р":"P","С":"C",
+  "Т":"T","Х":"X","У":"Y","Ѕ":"S","І":"I","Ј":"J","Ԛ":"Q","Ԝ":"W","Ғ":"F",
+  "Ѵ":"V","Ҫ":"C","Ө":"O","Л":"N","П":"N",
+  "α":"a","ο":"o","ν":"v","ι":"i","κ":"k","ρ":"p","τ":"t","υ":"u","χ":"x",
+  "γ":"y","η":"n","μ":"u","ω":"w","σ":"o","ϲ":"c","ϳ":"j","ϖ":"w","ϱ":"p",
+  "Α":"A","Β":"B","Ε":"E","Ζ":"Z","Η":"H","Ι":"I","Κ":"K","Μ":"M","Ν":"N",
+  "Ο":"O","Ρ":"P","Τ":"T","Υ":"Y","Χ":"X","Ϲ":"C",
+  "օ":"o","ս":"u","ո":"n","ց":"g","զ":"q","լ":"l","ի":"h","հ":"h","ք":"p",
+  "ա":"w","Տ":"S","Լ":"L","Օ":"O",
+  "ס":"o","ו":"i","ן":"l",
+  "Ꭺ":"A","Ᏼ":"B","Ꮯ":"C","Ꭰ":"D","Ꭼ":"E","Ꮐ":"G","Ꮋ":"H","Ꮖ":"I",
+  "Ꭻ":"J","Ꮶ":"K","Ꮮ":"L","Ꮇ":"M","Ꮑ":"N","Ꮲ":"P","Ꭱ":"R","Ꮪ":"S",
+  "Ꭲ":"T","Ꮩ":"V","Ꮃ":"W","Ꮓ":"Z","Ꮟ":"b","Ꮷ":"d","Ꮒ":"h","Ꮅ":"J",
+  "ⅰ":"i","ⅱ":"ii","ⅲ":"iii","ⅴ":"v","ⅹ":"x","ⅼ":"l","ⅽ":"c","ⅾ":"d","ⅿ":"m",
+  "Ⅰ":"I","Ⅴ":"V","Ⅹ":"X","Ⅼ":"L","Ⅽ":"C","Ⅾ":"D","Ⅿ":"M",
+  "ℓ":"l","℮":"e","ℊ":"g","ℯ":"e","ℴ":"o","ℹ":"i","ⅆ":"d","ⅇ":"e",
+  "ı":"i","ȷ":"j","ł":"l","ơ":"o","ɡ":"g","ǝ":"e","ɑ":"a","ⱅ":"t","ꞅ":"s"
+};
+function mapearFullwidth(ch){
+  const cp = ch.codePointAt(0);
+  if (cp >= 0xFF01 && cp <= 0xFF5E) return String.fromCodePoint(cp - 0xFEE0);
+  return null;
+}
+function buscarConfusable(ch){
+  if (Object.prototype.hasOwnProperty.call(CONFUSABLES, ch)) return CONFUSABLES[ch];
+  const fw = mapearFullwidth(ch);
+  if (fw && /[a-zA-Z0-9]/.test(fw)) return fw;
+  return null;
+}
+
+/* =====================================================================
+   2. CARACTERES INVISIBLES
+   ===================================================================== */
+const INVISIBLES = {
+  0x200B:"Espacio de ancho cero (ZWSP)",0x200C:"Antiunión de ancho cero (ZWNJ)",
+  0x200D:"Unión de ancho cero (ZWJ)",0x200E:"Marca izquierda-a-derecha (LRM)",
+  0x200F:"Marca derecha-a-izquierda (RLM)",0x202A:"Incrustación LTR (LRE)",
+  0x202B:"Incrustación RTL (RLE)",0x202C:"Fin de formato direccional (PDF)",
+  0x202D:"Forzado LTR (LRO)",0x202E:"Forzado derecha-a-izquierda (RLO) — invierte el texto visualmente",
+  0x2060:"Unión de palabras (WJ)",0x2061:"Aplicación de función (invisible)",
+  0x2062:"Multiplicación invisible",0x2063:"Separador invisible",0x2064:"Suma invisible",
+  0xFEFF:"BOM / espacio sin ruptura de ancho cero",0x00AD:"Guion suave",
+  0x034F:"Unificador de grafemas",0x061C:"Marca de letra árabe (ALM)",
+  0x180E:"Separador de vocales mongol"
+};
+function esInvisible(ch){ return Object.prototype.hasOwnProperty.call(INVISIBLES, ch.codePointAt(0)); }
+
+/* =====================================================================
+   3. MARCAS (fijas + del usuario), GANCHOS, ESQUELETO
+   ===================================================================== */
+const SECUENCIAS_ASCII = [["rn","m"],["vv","w"],["cl","d"],["cj","g"],["nn","m"],["ii","u"]];
+const UNITARIAS_ASCII = {"0":"o","1":"l","3":"e","5":"s","8":"b","9":"g","|":"l"};
+
+const MARCAS_BASE = [
+  "google","gmail","youtube","facebook","instagram","whatsapp","twitter",
+  "apple","icloud","itunes","amazon","microsoft","outlook","office","hotmail",
+  "windows","live","netflix","paypal","ebay","linkedin","dropbox","adobe",
+  "steam","spotify","telegram","tiktok","github","yahoo","binance","coinbase",
+  "wallapop","aliexpress","booking","airbnb","uber","visa","mastercard",
+  "santander","bbva","caixabank","lacaixa","sabadell","bankinter","unicaja",
+  "openbank","abanca","kutxabank","evobanco","imaginbank","bizum",
+  "correos","seur","dhl","mrw","gls","fedex","ups",
+  "movistar","vodafone","orange","yoigo","masmovil","digi",
+  "endesa","iberdrola","naturgy","repsol",
+  "agenciatributaria","seguridadsocial","dgt","sepe","hacienda"
+];
+/* Marcas añadidas por el usuario: viven solo en memoria (variable JS).
+   No usamos almacenamiento del navegador para mantener la app 100%
+   autocontenida y sin estado persistente. */
+let MARCAS_USUARIO = [];
+function todasLasMarcas(){ return MARCAS_BASE.concat(MARCAS_USUARIO); }
+
+const GANCHOS = [
+  "seguro","seguridad","acceso","cliente","clientes","verificar","verifica",
+  "verificacion","cuenta","cuentas","login","entrar","soporte","ayuda",
+  "envio","envios","paquete","pedido","pago","pagos","factura","facturas",
+  "actualizar","actualiza","alerta","aviso","banca","online","oficial",
+  "premio","regalo","urgente","confirmar","bloqueo","desbloqueo","reembolso",
+  "secure","security","account","verify","verification","support","update",
+  "service","services","help","billing","signin","confirm","alert","official",
+  "app","web","info","net"
+];
+
+/* Acortadores de URL conocidos: destino oculto en su servidor */
+const ACORTADORES = new Set([
+  "bit.ly","tinyurl.com","t.co","goo.gl","is.gd","cutt.ly","rebrand.ly",
+  "ow.ly","buff.ly","s.id","shorturl.at","rb.gy","tiny.cc","lnkd.in",
+  "t.ly","v.gd","qr.ae","acortar.link","n9.cl","short.io","bl.ink"
+]);
+
+function esqueleto(label){
+  let s = Array.from(label).map(ch=>{
+    if (esInvisible(ch)) return "";
+    const conf = buscarConfusable(ch);
+    return conf !== null ? conf : ch;
+  }).join("").toLowerCase();
+  for (const [seq, rep] of SECUENCIAS_ASCII) s = s.split(seq).join(rep);
+  s = Array.from(s).map(c => UNITARIAS_ASCII[c] || c).join("");
+  return s;
+}
+
+/* =====================================================================
+   4. DAMERAU-LEVENSHTEIN + TECLADO QWERTY
+   Igual que Levenshtein, pero el intercambio de dos letras contiguas
+   (payapl -> paypal) cuenta como UNA operación, que es como lo comete
+   un humano. Además, si la única diferencia es una sustitución,
+   comprobamos si las dos teclas son vecinas en el teclado.
+   ===================================================================== */
+function damerau(a, b){
+  const m=a.length, n=b.length;
+  if (Math.abs(m-n) > 2) return 99;
+  // aquí sí necesitamos la matriz completa, porque la transposición
+  // mira dos filas hacia atrás
+  const d = Array.from({length:m+1}, (_,i)=>Array.from({length:n+1},(_,j)=> i===0?j : j===0?i : 0));
+  for (let i=1;i<=m;i++){
+    for (let j=1;j<=n;j++){
+      const coste = a[i-1]===b[j-1] ? 0 : 1;
+      d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+coste);
+      if (i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1]){
+        d[i][j] = Math.min(d[i][j], d[i-2][j-2]+1);   // transposición
+      }
+    }
+  }
+  return d[m][n];
+}
+
+/* Vecindad de teclas en QWERTY español (suficiente con letras) */
+const QWERTY = {
+  q:"wa", w:"qeas", e:"wrsd", r:"etdf", t:"ryfg", y:"tugh", u:"yihj",
+  i:"uojk", o:"ipkl", p:"ol",
+  a:"qwsz", s:"awedxz", d:"serfcx", f:"drtgvc", g:"ftyhbv", h:"gyujnb",
+  j:"huikmn", k:"jiolm", l:"kop",
+  z:"asx", x:"zsdc", c:"xdfv", v:"cfgb", b:"vghn", n:"bhjm", m:"njk"
+};
+function teclasVecinas(c1, c2){
+  return QWERTY[c1] ? QWERTY[c1].includes(c2) : false;
+}
+/* Si a y b difieren en una sola sustitución, devuelve el par de letras */
+function unicaSustitucion(a, b){
+  if (a.length !== b.length) return null;
+  let par = null;
+  for (let i=0;i<a.length;i++){
+    if (a[i]!==b[i]){
+      if (par) return null;      // más de una diferencia
+      par = [a[i], b[i]];
+    }
+  }
+  return par;
+}
+
+/* =====================================================================
+   5. TLDs Y SUFIJOS
+   ===================================================================== */
+const SUFIJOS_DOBLES = new Set([
+  "co.uk","org.uk","gov.uk","ac.uk","me.uk",
+  "com.au","net.au","org.au","com.br","com.mx","com.ar","com.co","com.pe",
+  "com.cl","com.ve","com.ec","co.jp","co.in","co.nz","co.za","com.cn",
+  "com.tr","com.ru","gob.es","gob.mx","gob.ar","edu.es"
+]);
+const TLD_RIESGO = new Set([
+  "tk","ml","ga","cf","gq","xyz","top","click","link","icu","cam","rest",
+  "stream","download","racing","loan","work","men","bid","country","gdn",
+  "kim","cricket","science","party","date","faith","review","accountant","quest"
+]);
+const TLD_EXTENSION = new Set(["zip","mov"]);
+
+function partirDominio(host){
+  const et = host.split(".");
+  if (et.length < 2) return {subdominios:[], efectivo:host, principal:host, tld:""};
+  const ultimas2 = et.slice(-2).join(".");
+  let nEfectivo = SUFIJOS_DOBLES.has(ultimas2.toLowerCase()) ? 3 : 2;
+  if (et.length < nEfectivo) nEfectivo = et.length;
+  return {
+    subdominios: et.slice(0, et.length - nEfectivo),
+    efectivo: et.slice(-nEfectivo).join("."),
+    principal: et[et.length - nEfectivo],
+    tld: et.slice(et.length - nEfectivo + 1).join(".")
+  };
+}
+
+/* =====================================================================
+   6. DETECTOR DE ALFABETO
+   ===================================================================== */
+const SCRIPTS = [
+  ["Latino",/\p{Script=Latin}/u],["Cirílico",/\p{Script=Cyrillic}/u],
+  ["Griego",/\p{Script=Greek}/u],["Armenio",/\p{Script=Armenian}/u],
+  ["Hebreo",/\p{Script=Hebrew}/u],["Árabe",/\p{Script=Arabic}/u],
+  ["Han",/\p{Script=Han}/u],["Cherokee",/\p{Script=Cherokee}/u]
+];
+function detectarScript(ch){
+  if (esInvisible(ch)) return "Invisible";
+  if (/[0-9\-\.\u005F]/.test(ch)) return "Común";
+  for (const [nombre, re] of SCRIPTS){ if (re.test(ch)) return nombre; }
+  return "Otro";
+}
+/* Alfabetos usados en UNA etiqueta (excluye dígitos/guiones) */
+function scriptsDeEtiqueta(label){
+  const set = new Set();
+  for (const ch of label){
+    const s = detectarScript(ch);
+    if (s!=="Común" && s!=="Invisible") set.add(s);
+  }
+  return set;
+}
+
+/* =====================================================================
+   7. PUNYCODE (RFC 3492)
+   ===================================================================== */
+const PC = {base:36,tmin:1,tmax:26,skew:38,damp:700,initialBias:72,initialN:128};
+function pcAdapt(delta,numPoints,first){
+  delta = first ? Math.floor(delta/PC.damp) : delta>>1;
+  delta += Math.floor(delta/numPoints);
+  let k=0;
+  while (delta > ((PC.base-PC.tmin)*PC.tmax)>>1){ delta=Math.floor(delta/(PC.base-PC.tmin)); k+=PC.base; }
+  return k + Math.floor(((PC.base-PC.tmin+1)*delta)/(delta+PC.skew));
+}
+function decodePunycode(input){
+  let output=[], n=PC.initialN, i=0, bias=PC.initialBias;
+  let basic = input.lastIndexOf("-"); if (basic<0) basic=0;
+  for (let j=0;j<basic;j++) output.push(input.charCodeAt(j));
+  let idx = basic>0 ? basic+1 : 0;
+  while (idx < input.length){
+    const oldi=i; let w=1;
+    for (let k=PC.base;;k+=PC.base){
+      if (idx>=input.length) throw new Error("punycode inválido");
+      const c=input.charCodeAt(idx++);
+      const digit = c-48<10 ? c-22 : c-65<26 ? c-65 : c-97<26 ? c-97 : PC.base;
+      if (digit>=PC.base) throw new Error("punycode inválido");
+      i += digit*w;
+      const t = k<=bias ? PC.tmin : (k>=bias+PC.tmax ? PC.tmax : k-bias);
+      if (digit<t) break;
+      w *= PC.base-t;
+    }
+    bias = pcAdapt(i-oldi, output.length+1, oldi===0);
+    n += Math.floor(i/(output.length+1));
+    i %= output.length+1;
+    output.splice(i++,0,n);
+  }
+  return String.fromCodePoint(...output);
+}
+function encodePunycode(input){
+  const cps = Array.from(input).map(c=>c.codePointAt(0));
+  let output = cps.filter(cp=>cp<128).map(cp=>String.fromCharCode(cp)).join("");
+  const basicLength = output.length;
+  let handled = basicLength;
+  if (basicLength) output += "-";
+  let n=PC.initialN, delta=0, bias=PC.initialBias;
+  while (handled < cps.length){
+    let m=Infinity;
+    for (const cp of cps) if (cp>=n && cp<m) m=cp;
+    delta += (m-n)*(handled+1); n=m;
+    for (const cp of cps){
+      if (cp<n) delta++;
+      if (cp===n){
+        let q=delta;
+        for (let k=PC.base;;k+=PC.base){
+          const t = k<=bias ? PC.tmin : (k>=bias+PC.tmax ? PC.tmax : k-bias);
+          if (q<t) break;
+          const d = t + (q-t)%(PC.base-t);
+          output += String.fromCharCode(d + 22 + 75*(d<26));
+          q = Math.floor((q-t)/(PC.base-t));
+        }
+        output += String.fromCharCode(q + 22 + 75*(q<26));
+        bias = pcAdapt(delta, handled+1, handled===basicLength);
+        delta=0; handled++;
+      }
+    }
+    delta++; n++;
+  }
+  return output;
+}
+function dominioAUnicode(host){
+  return host.split(".").map(l=>{
+    if (l.toLowerCase().startsWith("xn--")){
+      try { return decodePunycode(l.slice(4).toLowerCase()); } catch(e){ return l; }
+    }
+    return l;
+  }).join(".");
+}
+function dominioAPunycode(host){
+  return host.split(".").map(l=>{
+    if (Array.from(l).some(c=>c.codePointAt(0)>127)){
+      try { return "xn--"+encodePunycode(l.toLowerCase()); } catch(e){ return l; }
+    }
+    return l;
+  }).join(".");
+}
+
+/* =====================================================================
+   8. ANÁLISIS PRINCIPAL
+   ===================================================================== */
+let ultimoInforme = "";
+
+function analizar(){
+  const entradaRaw = document.getElementById("entrada").value;
+  const $ = id => document.getElementById(id);
+  const senalesDiv=$("senales"), rejilla=$("rejilla");
+  senalesDiv.innerHTML=""; rejilla.innerHTML="";
+  $("avisoCopiado").style.display="none";
+
+  let t = entradaRaw.trim();
+  if (!t){ mostrarError("No has pegado nada."); return; }
+  if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(t)) t = "http://" + t;
+  let url;
+  try { url = new URL(t); } catch(e){ mostrarError("No se pudo interpretar la URL. Revisa el formato."); return; }
+
+  /* Esquemas directamente peligrosos */
+  if (url.protocol==="javascript:" || url.protocol==="data:"){
+    mostrarError("Esquema <b>"+url.protocol+"</b>: ejecuta código o incrusta contenido directamente. Nunca abras enlaces así.");
+    return;
+  }
+
+  const hostRaw = url.hostname;
+  const teniaPunycode = /(^|\.)xn--/i.test(hostRaw);
+  const host = dominioAUnicode(hostRaw);
+  const partes = partirDominio(host);
+  const MARCAS = todasLasMarcas();
+
+  const senales = [];
+  function senal(puntos, html, clase){ senales.push({puntos, html, clase: clase||""}); }
+
+  /* ---- ¿Es un acortador? Se detecta antes que nada ---- */
+  const esAcortador = ACORTADORES.has(partes.efectivo.toLowerCase());
+
+  /* ---- A. Homógrafos, con la corrección de alfabeto coherente ----
+     Regla nueva: dentro de cada etiqueta,
+     - etiqueta con alfabetos MEZCLADOS -> cada confusable es ataque.
+     - etiqueta 100% en un alfabeto no latino -> solo es ataque si su
+       esqueleto coincide con una marca; si no, es un IDN legítimo.   */
+  const etiquetas = host.split(".");
+  const infoEtiquetas = etiquetas.map(l=>{
+    const scr = scriptsDeEtiqueta(l);
+    const esq = esqueleto(l);
+    const marcaImitada = MARCAS.find(m => esq === m && l.toLowerCase() !== m) || null;
+    return {label:l, scripts:scr, mezclada: scr.size>1, puraNoLatina: scr.size===1 && !scr.has("Latino"), marcaImitada};
+  });
+
+  const scriptsGlobales = new Set();
+  infoEtiquetas.forEach(i=>i.scripts.forEach(s=>scriptsGlobales.add(s)));
+  let hayNoAscii=false, nConfusables=0, nInvisibles=0, idnCoherente=false;
+  let posGlobal = 0;
+
+  infoEtiquetas.forEach((info, iEt)=>{
+    const peligrosaPorMarca = info.puraNoLatina && info.marcaImitada;
+    if (info.puraNoLatina && !info.marcaImitada) idnCoherente = true;
+
+    Array.from(info.label).forEach(ch=>{
+      const cpNum = ch.codePointAt(0);
+      const cp = "U+"+cpNum.toString(16).toUpperCase().padStart(4,"0");
+      const script = detectarScript(ch);
+      const invisible = esInvisible(ch);
+      const conf = buscarConfusable(ch);
+      const noAscii = cpNum>127;
+      if (noAscii) hayNoAscii=true;
+
+      let tipo=null;
+      if (invisible){
+        tipo="invisible"; nInvisibles++;
+        senal(50,"Posición "+(posGlobal+1)+": carácter INVISIBLE "+cp+" — "+INVISIBLES[cpNum]+".","s-invisible");
+      } else if (noAscii && (info.mezclada || peligrosaPorMarca)){
+        // Solo es ataque si hay mezcla o si la etiqueta entera imita una marca
+        if (conf!==null){
+          tipo="mala"; nConfusables++;
+          senal(40,"Posición "+(posGlobal+1)+": <code>"+escaparHTML(ch)+"</code> ("+cp+", "+script+") — imita a <code>"+conf+"</code>"+(info.mezclada?" en una etiqueta con alfabetos mezclados":"")+".");
+        } else if (script!=="Latino"){
+          tipo="mala"; nConfusables++;
+          senal(30,"Posición "+(posGlobal+1)+": <code>"+escaparHTML(ch)+"</code> ("+cp+", "+script+") — carácter no latino infiltrado entre latinos.");
+        }
+      } else if (noAscii && info.puraNoLatina){
+        tipo="idn";  // se pinta en ámbar, sin puntos: IDN coherente
+      }
+
+      const celda=document.createElement("div");
+      celda.className="celda"+(tipo==="invisible"?" invisible":tipo==="mala"?" mala":tipo==="idn"?" idn":"")+(ch==="."?" sep":"");
+      celda.innerHTML="<span class='car'>"+(invisible?"·":escaparHTML(ch))+"</span><span class='cp'>"+cp+"</span><span class='scr'>"+script+"</span>";
+      rejilla.appendChild(celda);
+      posGlobal++;
+    });
+
+    // celda separadora del punto
+    if (iEt < infoEtiquetas.length-1){
+      const punto=document.createElement("div");
+      punto.className="celda sep";
+      punto.innerHTML="<span class='car'>.</span><span class='cp'>U+002E</span><span class='scr'>Común</span>";
+      rejilla.appendChild(punto);
+      posGlobal++;
+    }
+  });
+
+  const mezclaEnEtiqueta = infoEtiquetas.some(i=>i.mezclada);
+  if (mezclaEnEtiqueta) senal(25,"Alfabetos mezclados dentro de una misma etiqueta: "+[...scriptsGlobales].join(" + ")+".");
+
+  /* ---- B. Suplantación por esqueleto (principal) ---- */
+  const esqPrincipal = esqueleto(partes.principal);
+  let marcaSuplantada = null;
+  for (const marca of MARCAS){
+    if (esqPrincipal === marca && partes.principal.toLowerCase() !== marca){
+      marcaSuplantada = marca;
+      senal(45,"Suplantación: <code>"+escaparHTML(partes.principal)+"</code> se reduce al esqueleto <code>"+esqPrincipal+"</code> — imita a <code>"+marca+"</code>.");
+      break;
+    }
+  }
+
+  /* ---- C. Typosquatting Damerau-Levenshtein + tecla vecina ---- */
+  if (!marcaSuplantada && partes.principal.length >= 4 && !esAcortador){
+    const p = esqPrincipal;
+    let mejor = null;
+    for (const marca of MARCAS){
+      if (p === marca){ mejor=null; break; }
+      const d = damerau(p, marca);
+      if (d === 1 || (d === 2 && marca.length >= 6)){
+        if (!mejor || d < mejor.d) mejor = {marca, d};
+      }
+    }
+    if (mejor){
+      let extra = "";
+      const sust = unicaSustitucion(p, mejor.marca);
+      if (sust && teclasVecinas(sust[1], sust[0])){
+        extra = " La <code>"+sust[0]+"</code> y la <code>"+sust[1]+"</code> son teclas vecinas en QWERTY: errata de teclado deliberada.";
+      } else if (mejor.d===1 && p.length===mejor.marca.length && damerau(p,mejor.marca)===1 && levDistintoOrden(p,mejor.marca)){
+        extra = " Dos letras intercambiadas: el error de tecleo humano más común.";
+      }
+      senal(mejor.d===1 ? 40 : 25,
+        "Typosquatting: <code>"+escaparHTML(partes.principal)+"</code> está a distancia "+mejor.d+" (Damerau-Levenshtein) de <code>"+mejor.marca+"</code>."+extra);
+      marcaSuplantada = mejor.marca;
+    }
+  }
+  /* auxiliar: ¿la única diferencia es una transposición? */
+  function levDistintoOrden(a,b){
+    if (a.length!==b.length) return false;
+    const dif=[];
+    for (let i=0;i<a.length;i++) if (a[i]!==b[i]) dif.push(i);
+    return dif.length===2 && dif[1]===dif[0]+1 && a[dif[0]]===b[dif[1]] && a[dif[1]]===b[dif[0]];
+  }
+
+  /* ---- D. Combosquatting (ahora también sin guion para marcas cortas) ---- */
+  if (!marcaSuplantada && !esAcortador){
+    const pl = partes.principal.toLowerCase();
+    for (const marca of MARCAS){
+      if (pl === marca) break;
+      const idx = pl.indexOf(marca);
+      if (idx === -1) continue;
+      const antes = idx===0 ? "" : pl[idx-1];
+      const despues = idx+marca.length>=pl.length ? "" : pl[idx+marca.length];
+      const conLimites = (antes==="" || antes==="-") && (despues==="" || despues==="-");
+      const resto = pl.replace(marca,"").replace(/-/g,"");
+      // marcas cortas sin límites: solo si TODO el resto son ganchos/dígitos
+      const restoEsGancho = resto==="" ? false : soloGanchos(resto);
+      if (!conLimites && marca.length < 6 && !restoEsGancho) continue;
+      const ganchoDetectado = GANCHOS.find(g => resto.includes(g)) || null;
+      senal(ganchoDetectado ? 40 : 30,
+        "Combosquatting: contiene la marca <code>"+marca+"</code> con texto añadido"+
+        (ganchoDetectado ? " y la palabra gancho «"+ganchoDetectado+"»" : "")+
+        ". La marca real nunca registra dominios así.");
+      marcaSuplantada = marca;
+      break;
+    }
+  }
+  /* ¿la cadena se compone solo de palabras gancho y dígitos? */
+  function soloGanchos(s){
+    let resto = s;
+    let cambio = true;
+    while (cambio && resto.length){
+      cambio = false;
+      for (const g of GANCHOS){
+        if (resto.startsWith(g)){ resto = resto.slice(g.length); cambio=true; break; }
+      }
+      while (/^\d/.test(resto)){ resto = resto.slice(1); cambio=true; }
+    }
+    return resto.length===0;
+  }
+
+  /* ---- E. Marca en el subdominio ---- */
+  for (const sub of partes.subdominios){
+    const e = esqueleto(sub);
+    const marcaSub = MARCAS.find(m => e === m);
+    if (marcaSub){
+      senal(45,"Marca en el subdominio: <code>"+escaparHTML(sub)+"</code> aparenta ser <code>"+marcaSub+"</code>, pero el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>.");
+      break;
+    }
+  }
+  if (partes.subdominios.length >= 2){
+    const cadena = partes.subdominios.join(".").toLowerCase();
+    for (const marca of MARCAS){
+      if (cadena.includes(marca+".com") || cadena.includes(marca+".es")){
+        senal(45,"El texto <code>"+marca+".com</code> aparece como subdominio para engañar a la vista; el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>.");
+        break;
+      }
+    }
+  }
+
+  /* ---- F. RUTA Y PARÁMETROS (nuevo en v4) ---- */
+  let rutaYQuery = "";
+  try { rutaYQuery = decodeURIComponent(url.pathname + url.search); }
+  catch(e){ rutaYQuery = url.pathname + url.search; }   // % mal formados
+  const rutaLower = rutaYQuery.toLowerCase();
+
+  // F1. Open redirect: una URL completa escondida en los parámetros
+  const urlEmbebida = rutaYQuery.match(/https?:\/\/([^\/?&#\s]+)/i) || rutaYQuery.match(/(?:^|[=&\/])www\.([^\/?&#\s]+)/i);
+  if (urlEmbebida){
+    const destino = urlEmbebida[1].replace(/^www\./,"");
+    senal(35,"Posible open redirect: hay otra URL incrustada en los parámetros que apunta a <code>"+escaparHTML(destino)+"</code>. Aunque el dominio visible sea legítimo, el destino final puede ser ese otro. Analiza <code>"+escaparHTML(destino)+"</code> por separado.");
+  }
+
+  // F2. Marca en la ruta cuando el dominio NO es esa marca
+  if (!marcaSuplantada){
+    for (const marca of MARCAS){
+      if (partes.principal.toLowerCase()===marca) continue;
+      const re = new RegExp("(^|[\\/\\-_.])"+marca+"([\\/\\-_.]|$)","i");
+      if (re.test(rutaLower)){
+        senal(25,"La marca <code>"+marca+"</code> aparece en la ruta (<code>"+escaparHTML(url.pathname)+"</code>) pero el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>: página disfrazada.");
+        break;
+      }
+    }
+  }
+
+  // F3. Palabras gancho en la ruta (señal débil, acompaña a otras)
+  const ganchosRuta = GANCHOS.filter(g => g.length>4 && rutaLower.includes(g));
+  if (ganchosRuta.length >= 2){
+    senal(10,"La ruta acumula palabras gancho ("+ganchosRuta.slice(0,3).join(", ")+"): lenguaje típico de páginas de robo de credenciales.","s-media");
+  }
+
+  /* ---- G. TLD ---- */
+  const tldSolo = partes.tld.split(".").pop().toLowerCase();
+  if (TLD_EXTENSION.has(tldSolo)){
+    senal(20,"El TLD <code>."+tldSolo+"</code> coincide con una extensión de archivo: <code>"+escaparHTML(partes.efectivo)+"</code> parece un fichero pero es un dominio.");
+  } else if (TLD_RIESGO.has(tldSolo)){
+    senal(15,"TLD de alto abuso: <code>."+tldSolo+"</code>, dominio barato/gratuito frecuente en phishing.","s-media");
+  }
+  if (!marcaSuplantada){
+    const pl = partes.principal.toLowerCase();
+    if (MARCAS.includes(pl) && (TLD_RIESGO.has(tldSolo) || TLD_EXTENSION.has(tldSolo))){
+      senal(35,"La marca <code>"+pl+"</code> nunca opera bajo <code>."+tldSolo+"</code>: casi con seguridad es un registro fraudulento.");
+    }
+  }
+
+  /* ---- H. Estructura ---- */
+  if (url.username || url.password){
+    senal(40,"Credenciales antes de una <code>@</code>: <code>"+escaparHTML(url.username)+"</code> es decorado; el navegador va a <code>"+escaparHTML(host)+"</code>.");
+  }
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)){
+    senal(30,"El host es una IP cruda: los servicios legítimos no piden credenciales así.");
+  }
+  if (url.port && url.port!=="80" && url.port!=="443"){
+    senal(15,"Puerto no estándar <code>:"+url.port+"</code>. Los servicios web legítimos usan 80/443.","s-media");
+  }
+  const guiones = (partes.efectivo.match(/-/g)||[]).length;
+  if (guiones >= 3) senal(10,guiones+" guiones en el dominio: patrón de dominios generados para campañas.","s-media");
+  if (partes.subdominios.length >= 3) senal(10,partes.subdominios.length+" niveles de subdominio para esconder el dominio real.","s-media");
+
+  /* ---- I. Acortador ---- */
+  if (esAcortador){
+    senal(15,"Acortador de URL: <code>"+escaparHTML(partes.efectivo)+"</code> oculta el destino real en su servidor. Este análisis solo cubre el acortador, no adonde lleva.","s-media");
+  }
+
+  /* ---- Puntuación ---- */
+  let score = Math.min(100, senales.reduce((a,s)=>a+s.puntos,0));
+  let nivel, claseN;
+  if (senales.length===0){ nivel="LIMPIO"; claseN="limpio"; }
+  else if (score < 30){ nivel="RIESGO BAJO"; claseN="bajo"; }
+  else if (score < 60){ nivel="RIESGO MEDIO"; claseN="medio"; }
+  else if (score < 85){ nivel="RIESGO ALTO"; claseN="alto"; }
+  else { nivel="CRÍTICO"; claseN="critico"; }
+
+  /* ---------- Pintar ---------- */
+  $("medidor").style.display="block";
+  $("scoreNum").textContent=score; $("scoreNum").className="score-num n-"+claseN;
+  $("scoreNivel").textContent=nivel; $("scoreNivel").className="score-nivel n-"+claseN;
+  const barra=$("scoreBarra");
+  barra.className="barra-relleno f-"+claseN;
+  barra.style.width=Math.max(score, senales.length?8:3)+"%";
+
+  const pre = partes.subdominios.length ? partes.subdominios.join(".")+"." : "";
+  $("dominio").innerHTML=(pre?"<span class='sub'>"+escaparHTML(pre)+"</span>":"")+"<span class='efectivo'>"+escaparHTML(partes.efectivo)+"</span>";
+  $("explicaEfectivo").innerHTML="Dominio real (lo que controla su dueño): <b>"+escaparHTML(partes.efectivo)+"</b>"+
+    (partes.subdominios.length?" · Subdominios (texto libre del dueño): <b>"+escaparHTML(partes.subdominios.join("."))+"</b>":"");
+
+  const formaPunycode = dominioAPunycode(host);
+  $("punycode").innerHTML = teniaPunycode
+    ? "Forma punycode original pegada: <b>"+escaparHTML(hostRaw)+"</b>"
+    : (hayNoAscii ? "Forma punycode equivalente: <b>"+escaparHTML(formaPunycode)+"</b>" : "Dominio 100% ASCII, sin punycode.");
+  const navMuestraPunycode = hayNoAscii && (mezclaEnEtiqueta || nConfusables>0 || nInvisibles>0);
+  $("vistaNavegador").textContent = navMuestraPunycode ? formaPunycode : host;
+  $("notaNavegador").textContent = navMuestraPunycode
+    ? "Tu navegador mostraría la forma xn-- por mezcla de alfabetos o caracteres de riesgo: primera señal de alarma."
+    : (idnCoherente ? "Dominio internacionalizado con alfabeto coherente: el navegador lo mostraría tal cual." : "");
+  $("bloqueDominio").style.display="block";
+
+  const veredicto=$("veredicto");
+  const hayHomografo = nConfusables>0 || nInvisibles>0;
+  if (hayHomografo){
+    veredicto.className="veredicto peligro";
+    veredicto.innerHTML="<strong>¡Ataque homógrafo detectado!</strong><span>"+(nConfusables+nInvisibles)+" carácter(es) afectado(s)"+
+      (nInvisibles?" · incluye caracteres invisibles":"")+(teniaPunycode?" · venía en punycode (xn--)":"")+"</span>";
+  } else if (esAcortador && score < 60){
+    veredicto.className="veredicto aviso";
+    veredicto.innerHTML="<strong>URL acortada: destino oculto</strong>"+
+      "<span>No se puede dar por limpia sin conocer adónde redirige. Expándela primero:</span>"+
+      "<ul><li>bit.ly: añade <b>+</b> al final del enlace para ver el destino</li>"+
+      "<li>tinyurl: antepón <b>preview.</b> al dominio</li>"+
+      "<li>o usa un expansor (urlex.org) y pega aquí la URL final</li></ul>";
+  } else if (senales.length>0){
+    veredicto.className = score>=60 ? "veredicto peligro" : "veredicto aviso";
+    veredicto.innerHTML="<strong>"+(score>=60?"Dominio fraudulento con alta probabilidad":"Dominio sospechoso")+"</strong>"+
+      "<span>"+senales.length+" señal(es) de riesgo. Revisa el desglose.</span>";
+  } else if (idnCoherente){
+    veredicto.className="veredicto aviso";
+    veredicto.innerHTML="<strong>Dominio internacionalizado (IDN) coherente</strong><span>Usa un alfabeto no latino de forma consistente y no imita ninguna marca vigilada: probablemente legítimo en su región. Verifícalo si no lo esperabas.</span>";
+  } else {
+    veredicto.className="veredicto limpio";
+    veredicto.innerHTML="<strong>Sin señales de riesgo</strong><span>Ni homógrafos, ni suplantación, ni trucos de ruta o estructura. Esto no garantiza legitimidad al 100%.</span>";
+  }
+
+  if (senales.length){
+    senales.sort((a,b)=>b.puntos-a.puntos);
+    senales.forEach(s=>{
+      const div=document.createElement("div");
+      div.className="senal "+s.clase;
+      div.innerHTML="<span class='puntos'>+"+s.puntos+"</span><span>"+s.html+"</span>";
+      senalesDiv.appendChild(div);
+    });
+    $("bloqueSenales").style.display="block";
+  } else $("bloqueSenales").style.display="none";
+
+  ultimoInforme=[
+    "INFORME · Detector de Phishing y Homógrafos v4",
+    "Fecha: "+new Date().toLocaleString(),
+    "URL analizada: "+entradaRaw.trim(),
+    "Dominio (Unicode): "+host,
+    "Dominio (punycode): "+formaPunycode,
+    "Dominio real/efectivo: "+partes.efectivo,
+    "Ruta y parámetros: "+(url.pathname+url.search || "(ninguno)"),
+    "Puntuación: "+score+"/100 · Nivel: "+nivel,"",
+    ...(senales.length
+      ? ["SEÑALES:"].concat(senales.map(s=>"- [+"+s.puntos+"] "+s.html.replace(/<[^>]+>/g,"")))
+      : ["Sin señales de riesgo detectadas."])
+  ].join("\n");
+  $("btnCopiar").style.display="inline-block";
+}
+
+function mostrarError(msg){
+  const v=document.getElementById("veredicto");
+  v.className="veredicto aviso";
+  v.innerHTML="<strong>URL no válida o peligrosa</strong><span>"+msg+"</span>";
+  ["medidor","bloqueDominio","bloqueSenales"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("btnCopiar").style.display="none";
+}
+
+/* =====================================================================
+   9. MARCAS PERSONALIZADAS (solo en memoria)
+   ===================================================================== */
+function pintarChips(){
+  const chips=document.getElementById("chips");
+  chips.innerHTML="";
+  MARCAS_USUARIO.forEach((m,i)=>{
+    const c=document.createElement("span");
+    c.className="chip";
+    c.innerHTML=escaparHTML(m)+"<button aria-label='Quitar "+escaparHTML(m)+"'>×</button>";
+    c.querySelector("button").addEventListener("click",()=>{ MARCAS_USUARIO.splice(i,1); pintarChips(); });
+    chips.appendChild(c);
+  });
+}
+function anadirMarca(){
+  const inp=document.getElementById("marcaNueva");
+  const m=inp.value.trim().toLowerCase().replace(/[^a-z0-9\-]/g,"");
+  if (m.length>=3 && !MARCAS_BASE.includes(m) && !MARCAS_USUARIO.includes(m)){
+    MARCAS_USUARIO.push(m); pintarChips();
+  }
+  inp.value=""; inp.focus();
+}
+
+/* =====================================================================
+   10. COPIAR INFORME
+   ===================================================================== */
+function copiarInforme(){
+  const ok=()=>{ const a=document.getElementById("avisoCopiado"); a.style.display="block"; setTimeout(()=>a.style.display="none",2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ultimoInforme).then(ok).catch(()=>copiarFallback(ok));
+  } else copiarFallback(ok);
+}
+function copiarFallback(ok){
+  const ta=document.createElement("textarea");
+  ta.value=ultimoInforme; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); ok(); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function escaparHTML(s){
+  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   11. EVENTOS
+   ===================================================================== */
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnCopiar").addEventListener("click", copiarInforme);
+document.getElementById("btnMarca").addEventListener("click", anadirMarca);
+document.getElementById("marcaNueva").addEventListener("keydown", e=>{
+  if (e.key==="Enter"){ e.preventDefault(); anadirMarca(); }
+});
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("entrada").value="";
+  document.getElementById("veredicto").className="veredicto";
+  ["medidor","bloqueDominio","bloqueSenales"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("btnCopiar").style.display="none";
+  document.getElementById("entrada").focus();
+});
+document.getElementById("entrada").addEventListener("keydown", e=>{
+  if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); analizar(); }
+});
+
+})();
+
+</script>
+<script>
+(function(){
+  /* 'document' falso: solo ve dentro de #app3, asi los IDs repetidos
+     entre herramientas no se pisan y el codigo original no cambia. */
+  var __raiz = window.document.getElementById("app3");
+  var document = {
+    getElementById   : function(id){ return __raiz.querySelector("#" + id); },
+    querySelector    : function(s){ return __raiz.querySelector(s); },
+    querySelectorAll : function(s){ return __raiz.querySelectorAll(s); },
+    createElement    : function(t){ return window.document.createElement(t); },
+    createTextNode   : function(t){ return window.document.createTextNode(t); },
+    execCommand      : function(){ return window.document.execCommand.apply(window.document, arguments); },
+    addEventListener : function(){ return window.document.addEventListener.apply(window.document, arguments); },
+    documentElement  : window.document.documentElement,
+    get body(){ return __raiz; }
+  };
+  /* ---- codigo original de la herramienta, sin tocar ---- */
+
+"use strict";
+
+/* =====================================================================
+   TABLA DE FIRMAS (magic bytes) — verificadas con archivos reales.
+   Cada firma: bytes esperados, en qué posición (offset), y su id/nombre.
+   'peligro:true' marca formatos ejecutables (el caso de fraude grave).
+   ===================================================================== */
+const FIRMAS = [
+  // Ejecutables — los peligrosos van primero para no confundir
+  {id:"exe",  nombre:"Ejecutable de Windows (.exe/.dll)", bytes:[0x4D,0x5A], off:0, peligro:true},
+  {id:"elf",  nombre:"Ejecutable de Linux (ELF)",         bytes:[0x7F,0x45,0x4C,0x46], off:0, peligro:true},
+  {id:"macho",nombre:"Ejecutable Java/Mach-O",            bytes:[0xCA,0xFE,0xBA,0xBE], off:0, peligro:true},
+  {id:"macho2",nombre:"Ejecutable Mach-O (macOS)",        bytes:[0xFE,0xED,0xFA,0xCE], off:0, peligro:true},
+  {id:"script",nombre:"Script ejecutable (#!)",           bytes:[0x23,0x21], off:0, peligro:true},
+  // Documentos
+  {id:"pdf",  nombre:"PDF",       bytes:[0x25,0x50,0x44,0x46], off:0},
+  {id:"rtf",  nombre:"RTF",       bytes:[0x7B,0x5C,0x72,0x74,0x66], off:0},
+  {id:"ole",  nombre:"Office antiguo (.doc/.xls/.ppt)", bytes:[0xD0,0xCF,0x11,0xE0], off:0},
+  // Imágenes
+  {id:"png",  nombre:"PNG",       bytes:[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A], off:0},
+  {id:"jpg",  nombre:"JPEG",      bytes:[0xFF,0xD8,0xFF], off:0},
+  {id:"gif",  nombre:"GIF",       bytes:[0x47,0x49,0x46,0x38], off:0},
+  {id:"bmp",  nombre:"BMP",       bytes:[0x42,0x4D], off:0},
+  {id:"tiff", nombre:"TIFF",      bytes:[0x49,0x49,0x2A,0x00], off:0},
+  {id:"tiff2",nombre:"TIFF",      bytes:[0x4D,0x4D,0x00,0x2A], off:0},
+  {id:"ico",  nombre:"Icono ICO", bytes:[0x00,0x00,0x01,0x00], off:0},
+  // RIFF (webp/wav/avi comparten RIFF, se distinguen en el offset 8)
+  {id:"webp", nombre:"WebP",      bytes:[0x57,0x45,0x42,0x50], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  {id:"wav",  nombre:"Audio WAV", bytes:[0x57,0x41,0x56,0x45], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  {id:"avi",  nombre:"Vídeo AVI", bytes:[0x41,0x56,0x49,0x20], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  // Archivos comprimidos
+  {id:"zip",  nombre:"ZIP (o docx/xlsx/pptx/apk/jar)", bytes:[0x50,0x4B,0x03,0x04], off:0},
+  {id:"zip2", nombre:"ZIP vacío",                      bytes:[0x50,0x4B,0x05,0x06], off:0},
+  {id:"rar",  nombre:"RAR",       bytes:[0x52,0x61,0x72,0x21,0x1A,0x07], off:0},
+  {id:"7z",   nombre:"7-Zip",     bytes:[0x37,0x7A,0xBC,0xAF,0x27,0x1C], off:0},
+  {id:"gzip", nombre:"GZIP",      bytes:[0x1F,0x8B], off:0},
+  // Media
+  {id:"mp3",  nombre:"MP3",       bytes:[0x49,0x44,0x33], off:0},
+  {id:"mp3b", nombre:"MP3",       bytes:[0xFF,0xFB], off:0},
+  {id:"mp4",  nombre:"MP4 / vídeo", bytes:[0x66,0x74,0x79,0x70], off:4},
+  // Atajo de Windows: el atacante le pone el icono y el nombre que quiera
+  {id:"lnk",  nombre:"Atajo de Windows (.lnk)", bytes:[0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00], off:0, peligro:true},
+];
+
+/* Familias: qué firma-id se considera coherente con cada extensión.
+   Varios ids porque un formato puede tener variantes (jpg/jpeg, tiff...). */
+const EXT_FAMILIA = {
+  pdf:["pdf"], rtf:["rtf"],
+  doc:["ole","zip"], xls:["ole","zip"], ppt:["ole","zip"],
+  docx:["zip"], xlsx:["zip"], pptx:["zip"], apk:["zip"], jar:["zip"], epub:["zip"], odt:["zip"],
+  docm:["zip"], xlsm:["zip"], pptm:["zip"], xltm:["zip"], xlsb:["zip"],
+  png:["png"], jpg:["jpg"], jpeg:["jpg"], gif:["gif"], bmp:["bmp"],
+  tif:["tiff","tiff2"], tiff:["tiff","tiff2"], ico:["ico"], webp:["webp"],
+  wav:["wav"], avi:["avi"], mp3:["mp3","mp3b"], mp4:["mp4"], m4a:["mp4"], mov:["mp4"],
+  zip:["zip","zip2"], rar:["rar"], "7z":["7z"], gz:["gzip"], tgz:["gzip"],
+  exe:["exe"], dll:["exe"], scr:["exe"], com:["exe"], cpl:["exe"], sys:["exe"],
+  lnk:["lnk"], "class":["macho"],
+};
+/* Extensiones de texto plano: es normal que NO tengan firma */
+const EXT_TEXTO = new Set(["txt","csv","html","htm","json","xml","svg","md","log","css","js","ini","yml","yaml",
+                           "bat","cmd","vbs","vbe","jse","wsf","ps1","hta","au3","sh","py","reg"]);
+
+/* Extensiones que ejecutan código. Un archivo con estas es peligroso POR SÍ MISMO,
+   tenga la firma que tenga. Fuente: top de extensiones usadas en campañas maliciosas. */
+const EXT_EJECUTABLE = {
+  exe:"ejecutable de Windows", dll:"biblioteca de Windows (se carga desde otro programa)",
+  scr:"salvapantallas — es un ejecutable con otro nombre", com:"ejecutable heredado de Windows",
+  cpl:"panel de control — ejecutable", sys:"controlador del sistema",
+  bat:"script por lotes de Windows", cmd:"script de consola de Windows",
+  vbs:"script de Visual Basic", vbe:"script VBScript codificado",
+  js:"JavaScript — fuera del navegador se ejecuta como programa", jse:"JavaScript codificado",
+  wsf:"Windows Script File", ps1:"script de PowerShell",
+  hta:"aplicación HTML — se ejecuta fuera del navegador, sin sus protecciones",
+  au3:"script de AutoIt", jar:"aplicación Java", msi:"instalador de Windows",
+  lnk:"atajo de Windows — puede llevar cualquier comando oculto",
+  reg:"modifica el registro de Windows", sh:"script de shell", py:"script de Python"
+};
+
+/* Extensiones que ejecutan macros: legítimas, pero exigen desconfianza */
+const EXT_MACRO = new Set(["docm","xlsm","pptm","xltm","xlsb","dotm","potm","ppsm"]);
+
+/* Formatos que, siendo auténticos, pueden llevar contenido activo dentro */
+const EXT_CONTENIDO_ACTIVO = {
+  pdf:"Un PDF auténtico puede contener enlaces, formularios y scripts. El riesgo también depende del lector: mantén Acrobat actualizado y desactiva su JavaScript.",
+  docx:"Un DOCX auténtico puede llevar enlaces o referencias que hagan a Word conectarse a servidores externos.",
+  xlsx:"Un XLSX auténtico no lleva macros, pero sí puede consultar fuentes externas y conectarse a la web en segundo plano.",
+  pptx:"Puede incluir enlaces y objetos incrustados que conecten con el exterior.",
+  svg:"Un SVG es XML y admite scripts dentro. Trátalo como código, no como una imagen inerte.",
+  htm:"Las páginas guardadas se usan como formularios de phishing locales.",
+  html:"Las páginas guardadas se usan como formularios de phishing locales."
+};
+
+/* Extensiones que un documento o imagen normal NUNCA tendría como penúltima
+   parte del nombre. Sirven para detectar la doble extensión. */
+const EXT_SENUELO = new Set(["pdf","doc","docx","xls","xlsx","ppt","pptx","txt","rtf","csv",
+                             "jpg","jpeg","png","gif","bmp","webp","mp3","mp4","zip","rar"]);
+
+function hex2(n){ return n.toString(16).padStart(2,"0"); }
+
+/* ---- Doble extensión: factura.pdf.exe ----
+   Windows oculta por defecto la extensión conocida, así que la víctima solo ve
+   "factura.pdf". Se detecta por el NOMBRE, sin mirar los bytes. */
+function detectarDobleExtension(nombre){
+  const partes = nombre.toLowerCase().split(".");
+  if (partes.length < 3) return null;                 // necesita nombre + 2 extensiones
+  const ultima = partes[partes.length-1];
+  const penultima = partes[partes.length-2];
+  if (!EXT_SENUELO.has(penultima)) return null;       // la penúltima debe parecer un documento
+  const peligrosa = EXT_EJECUTABLE[ultima];
+  return {
+    senuelo: penultima,
+    real: ultima,
+    peligrosa: !!peligrosa,
+    queEs: peligrosa || null,
+    visible: partes.slice(0, partes.length-1).join(".")   // lo que Windows enseñaría
+  };
+}
+
+/* ---- ZIP cifrado ----
+   En la cabecera local del ZIP, el bit 0 del campo "general purpose flag"
+   (offset 6) indica que el contenido está protegido con contraseña. */
+function zipCifrado(bytes){
+  if (bytes.length < 8) return false;
+  if (!(bytes[0]===0x50 && bytes[1]===0x4B && bytes[2]===0x03 && bytes[3]===0x04)) return false;
+  return (bytes[6] & 0x01) === 1;
+}
+
+function coincide(bytes, firma){
+  const o = firma.off || 0;
+  if (firma.extra && firma.extra.pre){
+    for (let i=0;i<firma.extra.pre.length;i++) if (bytes[i]!==firma.extra.pre[i]) return false;
+  }
+  for (let i=0;i<firma.bytes.length;i++){
+    if (bytes[o+i] !== firma.bytes[i]) return false;
+  }
+  return true;
+}
+function detectar(bytes){
+  for (const f of FIRMAS){ if (coincide(bytes,f)) return f; }
+  return null;
+}
+/* Rango de bytes a resaltar en el hex dump para la firma detectada */
+function rangoMagia(firma){
+  if (!firma) return null;
+  const o = firma.off || 0;
+  if (firma.extra && firma.extra.pre){
+    return [{ini:0,fin:firma.extra.pre.length-1},{ini:o,fin:o+firma.bytes.length-1}];
+  }
+  return [{ini:o,fin:o+firma.bytes.length-1}];
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function esMagia(idx, rangos){
+  if (!rangos) return false;
+  return rangos.some(r => idx>=r.ini && idx<=r.fin);
+}
+
+function pintarHex(bytes, rangos){
+  const tabla = document.getElementById("hexTabla");
+  tabla.innerHTML="";
+  const PORFILA = 8;                           // 8/fila cabe en pantalla de móvil sin scroll
+  const total = Math.min(bytes.length, 128);   // primeros 128 bytes bastan
+  for (let fila=0; fila*PORFILA < total; fila++){
+    const tr = document.createElement("tr");
+    const base = fila*PORFILA;
+    let html = "<td class='off'>"+base.toString(16).padStart(6,"0")+"</td>";
+    // columna hex
+    for (let i=0;i<PORFILA;i++){
+      const idx = base+i;
+      if (idx<total){
+        const cls = esMagia(idx,rangos) ? "byte magia" : "byte";
+        html += "<td class='"+cls+"'>"+hex2(bytes[idx])+"</td>";
+      } else html += "<td class='byte'>&nbsp;&nbsp;</td>";
+    }
+    // columna ascii
+    html += "<td class='asc-cell'>";
+    for (let i=0;i<PORFILA;i++){
+      const idx = base+i;
+      if (idx<total){
+        const b = bytes[idx];
+        const c = (b>=32 && b<127) ? String.fromCharCode(b) : ".";
+        const cls = esMagia(idx,rangos) ? "ch magia" : "ch";
+        html += "<span class='"+cls+"'>"+(c==="<"?"&lt;":c==="&"?"&amp;":c)+"</span>";
+      }
+    }
+    html += "</td>";
+    tr.innerHTML = html;
+    tabla.appendChild(tr);
+  }
+}
+
+/* Firma que DEBERÍA tener un archivo según su extensión declarada.
+   Devuelve {hex, ascii, nombre} o null si la extensión no tiene firma fija. */
+function firmaEsperada(ext){
+  const ids = EXT_FAMILIA[ext];
+  if (!ids || !ids.length) return null;
+  const f = FIRMAS.find(x=>x.id===ids[0]);
+  if (!f) return null;
+  const bs = (f.extra && f.extra.pre) ? f.extra.pre.concat(f.bytes) : f.bytes;
+  const ascii = bs.map(b => (b>=32 && b<127) ? String.fromCharCode(b) : "·").join("");
+  return { hex: bs.map(hex2).join(" "), ascii, nombre: f.nombre };
+}
+/* Pinta el careo esperada-vs-real. Devuelve true si lo mostró. */
+function pintarCareo(ext, bytesReales){
+  const cont = document.getElementById("comparaFirma");
+  const esp = firmaEsperada(ext);
+  if (!esp){ cont.style.display="none"; return; }
+  const realBs = [...bytesReales.slice(0, Math.max(esp.hex.split(" ").length,4))];
+  const realHex = realBs.map(hex2).join(" ");
+  const realAsc = realBs.map(b => (b>=32 && b<127) ? String.fromCharCode(b) : "·").join("");
+  cont.innerHTML =
+    "<div class='titulo'>⚖ Careo de firmas · lo que promete «."+escaparHTML(ext)+"» vs lo que trae</div>"+
+    "<div class='cf-fila cf-esperada'>"+
+      "<div class='cf-etq'><b>Un ."+escaparHTML(ext)+" debería empezar por</b><span>"+escaparHTML(esp.nombre)+"</span></div>"+
+      "<div class='cf-bytes'>"+esp.hex+"<span class='asc'>"+escaparHTML(esp.ascii)+"</span></div>"+
+    "</div>"+
+    "<div class='cf-fila cf-real'>"+
+      "<div class='cf-etq'><b>Tu archivo empieza por</b><span>y eso no es un ."+escaparHTML(ext)+"</span></div>"+
+      "<div class='cf-bytes'>"+realHex+"<span class='asc'>"+escaparHTML(realAsc)+"</span></div>"+
+    "</div>"+
+    "<div class='cf-veredicto'>✗ Las firmas no coinciden: la extensión no dice la verdad</div>";
+  cont.style.display="block";
+}
+
+function nombreExtension(id){
+  const f = FIRMAS.find(x=>x.id===id);
+  return f ? f.nombre : id;
+}
+
+function analizar(bytes, nombreArchivo, tam){
+  const $ = id => document.getElementById(id);
+  const ext = (nombreArchivo.split(".").pop()||"").toLowerCase();
+  const tieneExt = nombreArchivo.includes(".");
+  const firma = detectar(bytes);
+  const rangos = rangoMagia(firma);
+
+  // Ficha
+  $("fichaFila").innerHTML =
+    "<div class='fila'><span class='k'>Nombre</span><span class='v'>"+escaparHTML(nombreArchivo)+"</span></div>"+
+    "<div class='fila'><span class='k'>Extensión</span><span class='v'>"+(tieneExt?("."+escaparHTML(ext)):"(sin extensión)")+"</span></div>"+
+    "<div class='fila'><span class='k'>Tamaño</span><span class='v'>"+formatoTam(tam)+"</span></div>"+
+    "<div class='fila'><span class='k'>Primeros bytes</span><span class='v'>"+[...bytes.slice(0,8)].map(hex2).join(" ")+"</span></div>";
+
+  // Comparativa
+  $("valDice").textContent = tieneExt ? ("."+ext) : "(sin nombre de tipo)";
+  $("valEs").textContent = firma ? firma.nombre : "Sin firma reconocible";
+
+  // Lógica de veredicto
+  const familia = EXT_FAMILIA[ext] || null;
+  const esTexto = EXT_TEXTO.has(ext);
+  const doble = detectarDobleExtension(nombreArchivo);
+  const ejecutablePorExt = EXT_EJECUTABLE[ext] || null;
+  let clase, icono, titulo, detalle, resDice="", resEs="", mostrarCareo=false;
+  let avisos = [];
+
+  if (doble && doble.peligrosa){
+    // MÁXIMA PRIORIDAD: el nombre delata la trampa, tengan los bytes lo que tengan.
+    clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+    titulo="¡PELIGRO! Doble extensión";
+    detalle="El archivo se llama «"+nombreArchivo+"»: aparenta ser un ."+doble.senuelo+
+            " pero su extensión real es ."+doble.real+" ("+doble.queEs+"). "+
+            "Windows oculta por defecto las extensiones conocidas, así que en el explorador verías solo «"+doble.visible+
+            "» y lo abrirías creyendo que es un documento. NO lo abras: casi siempre es una trampa.";
+    mostrarCareo = !!firma;
+  } else if (firma && firma.peligro){
+    // Contiene un ejecutable
+    const disfrazado = tieneExt && (!familia || !familia.includes(firma.id));
+    clase="v-mal"; icono="⚠"; resEs="res-mal";
+    if (disfrazado){
+      titulo="¡PELIGRO! Ejecutable disfrazado";
+      detalle="El archivo se llama «."+ext+"» pero por dentro es un "+firma.nombre+". Este es el truco clásico para que abras un programa creyendo que es un documento o una imagen. NO lo ejecutes.";
+      resDice="res-mal"; mostrarCareo=true;
+    } else {
+      titulo="Es un ejecutable";
+      detalle="El archivo es un "+firma.nombre+", y su extensión lo refleja. Trátalo con la cautela de cualquier programa: ejecútalo solo si sabes exactamente de dónde viene.";
+    }
+  } else if (ejecutablePorExt && !esTexto){
+    // La extensión ejecuta código aunque no haya firma binaria reconocible
+    clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+    titulo="Extensión que ejecuta código";
+    detalle="Un ."+ext+" es un "+ejecutablePorExt+". No es un documento: al abrirlo se ejecuta. Ábrelo solo si sabes exactamente qué hace y de dónde viene.";
+  } else if (!firma){
+    if (esTexto || !tieneExt){
+      if (ejecutablePorExt){
+        // Scripts: son texto, pero texto que se EJECUTA
+        clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+        titulo="Es un script: texto que se ejecuta";
+        detalle="No tiene firma binaria porque es texto plano, pero un ."+ext+" es un "+ejecutablePorExt+
+                ". Un documento o una foto nunca tendrían esta extensión. Ábrelo con un editor de texto para leerlo, nunca con doble clic.";
+      } else {
+        clase="v-neutro"; icono="?"; titulo="Sin firma — probablemente texto plano";
+        detalle="No hay magic bytes reconocibles. Es lo normal en archivos de texto (."+ (tieneExt?ext:"txt") +"), que no tienen firma. Coherente, sin señal de engaño.";
+      }
+    } else {
+      clase="v-mal"; icono="✕"; titulo="Debería tener firma y no la tiene"; resEs="res-mal";
+      detalle="Un ."+ext+" auténtico empieza con una firma reconocible, y este archivo no la tiene. Puede estar corrupto, o no ser en realidad un ."+ext+". Sospecha.";
+      mostrarCareo=true;
+    }
+  } else if (esTexto){
+    // dice ser texto pero tiene firma binaria
+    clase="v-mal"; icono="✕"; titulo="Dice ser texto, pero es binario"; resDice="res-mal"; resEs="res-mal";
+    detalle="El nombre sugiere texto (."+ext+") pero por dentro es un "+firma.nombre+". Incoherente: revisa por qué.";
+  } else if (familia && familia.includes(firma.id)){
+    clase="v-ok"; icono="✓"; resDice="res-ok"; resEs="res-ok";
+    // El verde solo dice que extensión y contenido coinciden. NO dice "es seguro".
+    const conActivo = EXT_CONTENIDO_ACTIVO[ext];
+    titulo = conActivo ? "Coincide, pero no bajes la guardia" : "Cuadra: es lo que dice ser";
+    detalle="La extensión ."+ext+" coincide con el formato real ("+firma.nombre+"): no hay disfraz."+
+      (firma.id==="zip" && ["docx","xlsx","pptx","apk","jar","epub","odt","docm","xlsm","pptm"].includes(ext) ? " (Los ."+ext+" son ZIP por dentro, así que la firma ZIP es la correcta.)" : "")+
+      " Esto solo confirma el tipo de archivo, no que su contenido sea inofensivo.";
+  } else {
+    clase="v-mal"; icono="✕"; titulo="No cuadra: el tipo real es otro"; resDice="res-mal"; resEs="res-mal";
+    detalle="El archivo se llama «."+ext+"» pero por dentro es un "+firma.nombre+". La extensión no corresponde al formato real. Puede ser un renombrado inocente o un intento de engaño: comprueba el origen antes de abrirlo.";
+    mostrarCareo=true;
+  }
+
+  // ---- Avisos secundarios: se suman al veredicto, no lo sustituyen ----
+  if (doble && !doble.peligrosa){
+    avisos.push(["ambar","Doble extensión",
+      "El nombre tiene dos extensiones (."+doble.senuelo+"."+doble.real+"). Windows mostraría solo «"+doble.visible+
+      "». No es una extensión ejecutable conocida, pero el patrón es el mismo que usan los atacantes: comprueba el origen."]);
+  }
+  if (EXT_MACRO.has(ext)){
+    avisos.push(["rojo","Formato con macros",
+      "Un ."+ext+" está pensado para llevar macros, que son código que se ejecuta dentro de Office. "+
+      "Si no esperabas macros, no pulses «Habilitar contenido»: es el paso que da vía libre al malware."]);
+  }
+  if (EXT_CONTENIDO_ACTIVO[ext] && clase === "v-ok"){
+    avisos.push(["ambar","Puede llevar contenido activo", EXT_CONTENIDO_ACTIVO[ext]]);
+  }
+  if (zipCifrado(bytes)){
+    avisos.push(["ambar","Comprimido protegido con contraseña",
+      "El contenido está cifrado, así que ni este verificador ni la mayoría de los antivirus pueden inspeccionarlo. "+
+      "Los atacantes usan justamente esto para colar adjuntos sin que los filtros los analicen. Si la contraseña venía en el propio correo, desconfía."]);
+  }
+
+  $("veredicto").className = "veredicto "+clase;
+  $("veredicto").innerHTML = "<div class='circulo'>"+icono+"</div><div class='txt'><strong>"+titulo+"</strong><span>"+detalle+"</span></div>";
+  $("tarjDice").className = "tarjeta "+resDice;
+  $("tarjEs").className = "tarjeta "+resEs;
+
+  // Pintar avisos
+  const contAv = $("avisos");
+  if (avisos.length){
+    contAv.innerHTML = avisos.map(function(a){
+      return "<div class='aviso-extra av-"+a[0]+"'><span class='ic'>"+(a[0]==="rojo"?"■":"▲")+
+             "</span><span><b>"+escaparHTML(a[1])+"</b><br>"+a[2]+"</span></div>";
+    }).join("");
+    contAv.style.display="block";
+  } else contAv.style.display="none";
+
+  if (mostrarCareo) pintarCareo(ext, bytes);
+  else document.getElementById("comparaFirma").style.display="none";
+
+  pintarHex(bytes, rangos);
+  $("resultado").style.display="block";
+  $("resultado").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function formatoTam(b){
+  if (b<1024) return b+" bytes";
+  if (b<1024*1024) return (b/1024).toFixed(1)+" KB";
+  return (b/1024/1024).toFixed(1)+" MB";
+}
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   LECTURA DE ARCHIVO (solo los primeros 512 bytes)
+   FileReader lee el archivo que TÚ eliges; el navegador no deja
+   acceder a nada que no entregues a mano.
+   ===================================================================== */
+function leerArchivo(file){
+  const trozo = file.slice(0, 512);        // no hace falta leer entero
+  const lector = new FileReader();
+  lector.onload = e => {
+    const bytes = new Uint8Array(e.target.result);
+    analizar(bytes, file.name, file.size);
+  };
+  lector.readAsArrayBuffer(trozo);
+}
+
+const input = document.getElementById("fileInput");
+const dz = document.getElementById("dropzone");
+dz.addEventListener("click", ()=>input.click());
+input.addEventListener("change", ()=>{ if (input.files[0]) leerArchivo(input.files[0]); });
+dz.addEventListener("dragover", e=>{ e.preventDefault(); dz.classList.add("hover"); });
+dz.addEventListener("dragleave", ()=>dz.classList.remove("hover"));
+dz.addEventListener("drop", e=>{
+  e.preventDefault(); dz.classList.remove("hover");
+  if (e.dataTransfer.files[0]) leerArchivo(e.dataTransfer.files[0]);
+});
+
+/* =====================================================================
+   EJEMPLOS sintéticos: bytes fabricados en memoria + nombre falso,
+   para ver la app funcionar sin buscar archivos.
+   ===================================================================== */
+const EJEMPLOS = {
+  "pdf-ok":   { nombre:"contrato.pdf", bytes:[0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x37,0x0A,0x25,0xE2,0xE3,0xCF,0xD3,0x0A,0x31,0x20,0x30,0x20,0x6F,0x62,0x6A] },
+  "exe-fake": { nombre:"factura.pdf", bytes:[0x4D,0x5A,0x90,0x00,0x03,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0xFF,0xFF,0x00,0x00,0xB8,0x00,0x00,0x00] },
+  "png-ok":   { nombre:"foto.png", bytes:[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,0x00,0x00,0x00,0x04] },
+  "zip-doc":  { nombre:"informe.docx", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x00,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+  // Doble extensión: lo que Windows enseñaría es "nomina.pdf"
+  "doble-ext":{ nombre:"nomina.pdf.exe", bytes:[0x4D,0x5A,0x90,0x00,0x03,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0xFF,0xFF,0x00,0x00,0xB8,0x00,0x00,0x00] },
+  // Atajo de Windows disfrazado de documento
+  "lnk-fake": { nombre:"presupuesto.pdf.lnk", bytes:[0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46] },
+  // ZIP con el bit de cifrado activado (byte 6 = 0x09, bit 0 a 1)
+  "zip-cif":  { nombre:"documentos.zip", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x09,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+  // Formato con macros, firma ZIP correcta
+  "macro-doc":{ nombre:"factura.xlsm", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x00,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+};
+document.querySelectorAll("[data-ej]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const e = EJEMPLOS[btn.dataset.ej];
+    analizar(new Uint8Array(e.bytes), e.nombre, e.bytes.length);
+  });
+});
+
+})();
+
+</script>
+
+</body>
+</html>

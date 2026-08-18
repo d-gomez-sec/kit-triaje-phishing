@@ -1,9 +1,11 @@
 # Kit de Triaje de Phishing
 
+**▶ Pruébalo aquí:** https://d-gomez-sec.github.io/kit-triaje-phishing/
+
 Cuatro herramientas de análisis para decidir, en minutos y sin depender de servicios externos, si un correo sospechoso es un fraude.
 
-**Cómo funciona:** acorta el tiempo de triaje de un correo sospechoso reuniendo en un solo sitio las cuatro comprobaciones que normalmente exigen cuatro webs distintas.
-**Importante:** todo el análisis ocurre en el dispositivo, así que un correo que puede contener datos sensibles nunca se sube a un servicio de terceros.
+**Qué resuelve:** acorta el tiempo de triaje de un correo sospechoso reuniendo en un solo sitio las cuatro comprobaciones que normalmente exigen cuatro webs distintas.
+**Por qué importa:** todo el análisis ocurre en el dispositivo, así que un correo que puede contener datos sensibles nunca se sube a un servicio de terceros.
 
 ---
 
@@ -41,14 +43,14 @@ Comprueba si un adjunto es lo que aparenta ser, en cuatro frentes:
 
 ## Uso
 
-Abre `kit-ciberseguridad.html` en cualquier navegador. Es un único archivo autocontenido: incluye las cuatro herramientas y funciona sin conexión y sin instalar nada.
+Abre `index.html` en cualquier navegador. Es un único archivo autocontenido: incluye las cuatro herramientas y funciona sin conexión y sin instalar nada.
 
 ---
 
 ## Estructura del repositorio
 
 ```
-kit-ciberseguridad.html   ← el kit listo para usar (archivo generado)
+index.html                ← el kit listo para usar (archivo generado)
 construir_kit.py          ← script que genera el kit
 herramientas/             ← código fuente de cada herramienta
     analizador-cabeceras.html
@@ -63,7 +65,7 @@ herramientas/             ← código fuente de cada herramienta
 
 1. Edita el archivo correspondiente en `herramientas/`
 2. Ejecuta `python3 construir_kit.py` desde la raíz del repositorio
-3. El script regenera `kit-ciberseguridad.html` con el cambio incorporado
+3. El script regenera `index.html` con el cambio incorporado
 
 El script es determinista —partiendo de las mismas herramientas produce siempre un kit idéntico— y no necesita dependencias, solo Python 3.
 
