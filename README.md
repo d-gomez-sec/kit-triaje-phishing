@@ -2,7 +2,7 @@
 
 Cuatro herramientas de análisis para decidir, en minutos y sin depender de servicios externos, si un correo sospechoso es un fraude.
 
-**Qué resuelve:** acorta el tiempo de triaje de un correo sospechoso reuniendo en un solo sitio las cuatro comprobaciones que normalmente exigen cuatro webs distintas.
+**Cómo funciona:** acorta el tiempo de triaje de un correo sospechoso reuniendo en un solo sitio las cuatro comprobaciones que normalmente exigen cuatro webs distintas.
 **Por qué importa:** todo el análisis ocurre en el dispositivo, así que un correo que puede contener datos sensibles nunca se sube a un servicio de terceros.
 
 ---
