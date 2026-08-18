@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analizador de Cabeceras de Correo</title>
+<style>
+  /* ====== Infografía clara: los semáforos mandan ====== */
+  :root{
+    --fondo:#0d1117;
+    --tinta:#c9d1d9;
+    --panel:#161b22;
+    --linea:#2a313c;
+    --verde:#3fb950;  --verde-suave:#12261a;
+    --ambar:#d29922;  --ambar-suave:#2a2110;
+    --rojo:#f85149;   --rojo-suave:#2c1618;
+    --azul:#58a6ff;   --azul-suave:#132844;
+    --violeta:#bc8cff;--violeta-suave:#22183a;
+    --gris:#8b949e;   --gris-suave:#21262d;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+  .contenedor{max-width:880px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:1.6rem}
+  .pildoras{display:flex;justify-content:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
+  .pildora{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .7rem;border-radius:99px}
+  .p-verde{background:var(--verde-suave);color:var(--verde)}
+  .p-ambar{background:var(--ambar-suave);color:var(--ambar)}
+  .p-rojo{background:var(--rojo-suave);color:var(--rojo)}
+  h1{font-size:1.65rem;color:#e6edf3}
+  h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}
+  header p{color:var(--tenue);font-size:.95rem;margin-top:.4rem}
+
+  .panel{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:1.2rem;margin-bottom:1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+  textarea{width:100%;min-height:140px;resize:vertical;font-family:var(--mono);font-size:.82rem;border:1px solid var(--linea);border-radius:10px;padding:.8rem;background:#0d1117;color:var(--tinta)}
+  textarea:focus{outline:2px solid var(--verde)}
+  .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+  button{font-family:var(--sans);font-weight:600;font-size:.88rem;padding:.6rem 1.3rem;border-radius:10px;cursor:pointer;border:1px solid transparent}
+  #btnAnalizar{background:var(--verde);color:#0d1117}
+  #btnAnalizar:hover{background:#4fd162}
+  .btn-sec{background:var(--gris-suave);color:var(--tinta);border-color:var(--linea)}
+  .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+  button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+
+  /* ====== Semáforo grande de veredicto ====== */
+  #resumen{display:none}
+  .semaforos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem}
+  .luz{border-radius:12px;padding:1rem;text-align:center;border:2px solid}
+  .luz .metodo{font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+  .luz .estado{font-size:1.5rem;font-weight:800;margin:.2rem 0}
+  .luz .detalle{font-size:.72rem;line-height:1.35;word-break:break-word}
+  .luz.ok{background:var(--verde-suave);border-color:var(--verde);color:var(--verde)}
+  .luz.mal{background:var(--rojo-suave);border-color:var(--rojo);color:var(--rojo)}
+  .luz.neutro{background:var(--ambar-suave);border-color:var(--ambar);color:var(--ambar)}
+  .luz.na{background:var(--gris-suave);border-color:var(--gris);color:var(--gris)}
+
+  .veredicto-global{display:flex;align-items:center;gap:1rem;border-radius:12px;padding:1rem 1.2rem;margin-top:1rem;border:2px solid}
+  .veredicto-global .circulo{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#0d1117;font-weight:800}
+  .veredicto-global strong{display:block;font-size:1.05rem}
+  .veredicto-global span{font-size:.85rem;color:var(--tinta)}
+  .vg-ok{background:var(--verde-suave);border-color:var(--verde)} .vg-ok .circulo{background:var(--verde)} .vg-ok strong{color:var(--verde)}
+  .vg-mal{background:var(--rojo-suave);border-color:var(--rojo)} .vg-mal .circulo{background:var(--rojo)} .vg-mal strong{color:var(--rojo)}
+  .vg-neutro{background:var(--ambar-suave);border-color:var(--ambar)} .vg-neutro .circulo{background:var(--ambar)} .vg-neutro strong{color:var(--ambar)}
+
+  /* ====== Cara a cara de remitentes ====== */
+  #remitentes{display:none}
+  .cara-a-cara{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+  @media (max-width:640px){ .cara-a-cara{grid-template-columns:1fr} }
+  .tarjeta-rem{border-radius:12px;padding:1rem;border:2px solid var(--linea);background:#0d1117}
+  .tarjeta-rem h3{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:.4rem}
+  .tarjeta-rem .dir{font-family:var(--mono);font-size:.85rem;word-break:break-all;color:#e6edf3}
+  .tarjeta-rem .dom{margin-top:.4rem;font-weight:700;font-size:.92rem}
+  .franja{margin-top:.8rem;border-radius:10px;padding:.7rem 1rem;font-size:.88rem;font-weight:600;border:2px solid}
+  .franja.ok{background:var(--verde-suave);border-color:var(--verde);color:var(--verde)}
+  .franja.mal{background:var(--rojo-suave);border-color:var(--rojo);color:var(--rojo)}
+  .franja.reenvio{background:var(--violeta-suave);border-color:var(--violeta);color:var(--violeta)}
+
+  /* ====== Línea de tiempo del viaje ====== */
+  #viaje{display:none}
+  .tiempo{position:relative;margin-left:14px;border-left:3px solid var(--linea);padding-left:1.1rem}
+  .salto{position:relative;margin-bottom:.9rem;border-radius:12px;padding:.8rem 1rem;border:2px solid var(--linea);background:#0d1117}
+  .salto::before{content:"";position:absolute;left:calc(-1.1rem - 3px - 7px);top:1rem;width:14px;height:14px;border-radius:50%;background:var(--gris);border:3px solid var(--fondo)}
+  .salto.confianza{border-color:var(--verde);background:var(--verde-suave)}
+  .salto.confianza::before{background:var(--verde)}
+  .salto.reenviador{border-color:var(--violeta);background:var(--violeta-suave)}
+  .salto.reenviador::before{background:var(--violeta)}
+  .salto .quien{font-weight:700;font-size:.92rem;word-break:break-all;color:#e6edf3}
+  .salto .meta{font-size:.78rem;color:var(--tenue);margin-top:.25rem;word-break:break-all}
+  .salto .etiqueta{display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .5rem;border-radius:99px;margin-bottom:.3rem}
+  .et-confianza{background:var(--verde);color:#0d1117}
+  .et-reenviador{background:var(--violeta);color:#0d1117}
+  .et-origen{background:var(--gris);color:#0d1117}
+  .delta{font-size:.72rem;color:var(--tenue);margin:.2rem 0 .7rem .2rem}
+  .delta.lento{color:var(--ambar);font-weight:700}
+
+  /* ====== Banderas y explicaciones ====== */
+  #banderas{display:none}
+  .bandera{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.75rem 1rem;margin-top:.6rem;font-size:.9rem;border:2px solid}
+  .bandera .icono{flex-shrink:0;font-weight:800}
+  .b-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+  .b-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+  .b-violeta{background:var(--violeta-suave);border-color:var(--violeta);color:#d2a8ff}
+  .b-verde{background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+  .bandera code{font-family:var(--mono);background:#010409;padding:.05rem .35rem;border-radius:4px;border:1px solid var(--linea);font-size:.82rem;color:var(--verde)}
+
+  details{margin-top:.7rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+  summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+  details[open] summary{border-bottom:1px solid var(--linea)}
+  details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.5;color:#adbac7}
+  details .cuerpo b{color:#e6edf3}
+
+  #otrosDatos{display:none}
+  .fila-dato{display:flex;gap:.6rem;padding:.45rem 0;border-bottom:1px dashed var(--linea);font-size:.85rem}
+  .fila-dato:last-child{border-bottom:none}
+  .fila-dato .k{flex:0 0 130px;font-weight:700;color:var(--tenue)}
+  .fila-dato .v{font-family:var(--mono);word-break:break-all;font-size:.8rem;color:var(--tinta)}
+
+  footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <header>
+    <div class="pildoras">
+      <span class="pildora p-verde">PASA</span>
+      <span class="pildora p-ambar">DUDOSO</span>
+      <span class="pildora p-rojo">FALLA</span>
+    </div>
+    <h1>Analizador de Cabeceras de Correo</h1>
+    <p>Pega las cabeceras completas de un correo (en Proton: ⋯ → «Ver cabeceras») y descubre quién lo envió de verdad, qué camino siguió y si las comprobaciones antifraude lo respaldan.</p>
+  </header>
+
+  <section class="panel">
+    <label for="entrada">Cabeceras del correo</label>
+    <textarea id="entrada" spellcheck="false" placeholder="Pega aquí todo el texto de las cabeceras…"></textarea>
+    <div class="botones">
+      <button id="btnAnalizar">Analizar cabeceras</button>
+      <button id="btnEjemplo" class="btn-sec">Cargar ejemplo real</button>
+      <button id="btnLimpiar" class="btn-sec">Limpiar</button>
+    </div>
+  </section>
+
+  <!-- Semáforos de autenticación -->
+  <section id="resumen" class="panel">
+    <label>Comprobaciones antifraude · veredicto de tu proveedor</label>
+    <div id="semaforos" class="semaforos"></div>
+    <div id="veredictoGlobal"></div>
+    <details>
+      <summary>¿Qué significan SPF, DKIM y DMARC?</summary>
+      <div class="cuerpo">
+        <b>SPF</b> comprueba que el servidor que envió el correo tiene permiso del dominio remitente para hacerlo (una lista publicada en el DNS). Valida el remitente <i>técnico</i> (el del sobre).<br><br>
+        <b>DKIM</b> es una firma criptográfica: el dominio firma el mensaje y cualquiera puede verificar con su clave pública que no se alteró por el camino y que ese dominio lo respalda.<br><br>
+        <b>DMARC</b> es la regla que ata todo al remitente que TÚ ves (el <code>From</code>): exige que SPF o DKIM pasen <i>y</i> que su dominio coincida con el del From. Es la comprobación que más importa contra la suplantación.<br><br>
+        Estos veredictos no los calcula esta app: los calculó tu proveedor (Proton, Gmail…) al recibir el correo, consultando el DNS en ese momento, y los dejó escritos en la cabecera <code>Authentication-Results</code>. Aquí los leemos e interpretamos — que es exactamente lo que hace un analista.
+      </div>
+    </details>
+  </section>
+
+  <!-- Cara a cara de remitentes -->
+  <section id="remitentes" class="panel">
+    <label>¿Quién dice ser vs. quién es? · el cara a cara de remitentes</label>
+    <div class="cara-a-cara">
+      <div class="tarjeta-rem">
+        <h3>Lo que TÚ ves (From)</h3>
+        <div id="fromDir" class="dir">—</div>
+        <div class="dom">Dominio: <span id="fromDom">—</span></div>
+      </div>
+      <div class="tarjeta-rem">
+        <h3>Remitente técnico (Return-Path)</h3>
+        <div id="rpDir" class="dir">—</div>
+        <div class="dom">Dominio: <span id="rpDom">—</span></div>
+      </div>
+    </div>
+    <div id="franjaRemitentes"></div>
+    <div id="replyTo"></div>
+    <details>
+      <summary>¿Por qué hay dos remitentes?</summary>
+      <div class="cuerpo">
+        El <b>From</b> es como el remite escrito a mano en un sobre: quien envía puede poner lo que quiera, y es lo único que te muestra tu app de correo. El <b>Return-Path</b> es el remitente del "sobre" técnico: la dirección que usan los servidores entre sí. Cuando divergen sin motivo, sospecha. Hay un motivo legítimo frecuente: los <b>reenviadores y servicios de alias</b> (SimpleLogin, addy.io, Firefox Relay…) están obligados a reescribir el Return-Path para no romper SPF — esta app lo detecta y no te alarma en falso.
+      </div>
+    </details>
+  </section>
+
+  <!-- Línea de tiempo -->
+  <section id="viaje" class="panel">
+    <label>El viaje del correo · de abajo (origen) a arriba (tu buzón)</label>
+    <div id="tiempo" class="tiempo"></div>
+    <details>
+      <summary>¿Cómo leer este viaje y por qué unos saltos son de fiar y otros no?</summary>
+      <div class="cuerpo">
+        Cada servidor por el que pasa un correo añade su línea <code>Received</code> <b>encima</b> de las anteriores, así que la ruta se lee de abajo hacia arriba. Punto clave del modelo de confianza: <b>las líneas de abajo las pudo inventar el remitente</b> — un atacante puede fabricar saltos falsos antes de enviar. Solo son verificables las líneas que añadió <b>tu propio proveedor</b> (en verde), porque esas no las controla el atacante. Por eso esta app marca la "zona de confianza": todo lo que queda por debajo debe leerse como <i>afirmaciones sin verificar</i>, no como hechos.
+      </div>
+    </details>
+  </section>
+
+  <!-- Banderas -->
+  <section id="banderas" class="panel">
+    <label>Señales y observaciones</label>
+    <div id="listaBanderas"></div>
+  </section>
+
+  <!-- Otros datos -->
+  <section id="otrosDatos" class="panel">
+    <label>Ficha del mensaje</label>
+    <div id="ficha"></div>
+  </section>
+
+  <footer>Herramienta educativa · Todo el análisis ocurre en tu navegador; nada se envía a internet.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   1. PARSEO DE CABECERAS
+   Las cabeceras largas continúan en la línea siguiente con un espacio
+   o tabulador al principio ("plegado"). Primero las desplegamos.
+   ===================================================================== */
+function desplegar(raw){
+  return raw.replace(/\r\n/g,"\n").replace(/\n[ \t]+/g," ");
+}
+function parsearCabeceras(raw){
+  const lista = [];                     // conserva el ORDEN (importa en Received)
+  for (const linea of desplegar(raw).split("\n")){
+    const m = linea.match(/^([A-Za-z0-9\-]+):\s*(.*)$/);
+    if (m) lista.push({nombre: m[1].toLowerCase(), valor: m[2].trim()});
+  }
+  return lista;
+}
+function todas(lista, nombre){ return lista.filter(h=>h.nombre===nombre).map(h=>h.valor); }
+function primera(lista, nombre){ const v = todas(lista, nombre); return v.length ? v[0] : null; }
+
+/* =====================================================================
+   2. UTILIDADES DE DIRECCIONES Y DOMINIOS
+   ===================================================================== */
+function extraerDireccion(v){
+  if (!v) return null;
+  const m = v.match(/<([^>]+)>/);
+  if (m) return m[1].trim();
+  const m2 = v.match(/[^\s"<>]+@[^\s"<>]+/);
+  return m2 ? m2[0].replace(/[;,]$/,"") : null;
+}
+function dominioDe(addr){
+  if (!addr) return null;
+  const i = addr.lastIndexOf("@");
+  return i===-1 ? null : addr.slice(i+1).toLowerCase();
+}
+/* Dominio registrable: las 2 últimas etiquetas (suficiente aquí) */
+function registrable(dom){
+  if (!dom) return null;
+  const et = dom.split(".");
+  return et.length<=2 ? dom : et.slice(-2).join(".");
+}
+
+/* Servicios de alias/reenvío conocidos: reescriben remitentes LEGÍTIMAMENTE */
+const REENVIADORES = ["simplelogin","passinbox.com","slmail.me","addy.io","anonaddy",
+  "mozmail.com","relay.firefox.com","duck.com","privaterelay.appleid.com","forwardemail.net"];
+function esReenviador(texto){
+  if (!texto) return null;
+  const t = texto.toLowerCase();
+  return REENVIADORES.find(r => t.includes(r)) || null;
+}
+
+/* =====================================================================
+   3. PARSEO DE Authentication-Results
+   Formato: "servidor; metodo=resultado propiedades..."
+   Puede haber varias cabeceras, cada una con uno o más métodos.
+   ===================================================================== */
+function parsearAuth(valores){
+  const resultados = [];  // {servidor, metodo, resultado, dominio, extra}
+  for (const v of valores){
+    const partes = v.split(";");
+    const servidor = partes[0].trim().split(/\s/)[0];
+    for (const p of partes.slice(1)){
+      const m = p.trim().match(/^(spf|dkim|dmarc|arc)=([a-z]+)/i);
+      if (!m) continue;
+      const metodo = m[1].toLowerCase(), resultado = m[2].toLowerCase();
+      const domM = p.match(/header\.(?:d|from)=([^\s;]+)/i) || p.match(/smtp\.mailfrom=([^\s;]+)/i);
+      const dominio = domM ? domM[1].replace(/^@/,"") : null;
+      resultados.push({servidor, metodo, resultado, dominio, extra: p.trim()});
+    }
+  }
+  return resultados;
+}
+/* El mejor resultado por método (pass gana; si no hay pass, el peor manda) */
+function resumenAuth(resultados, metodo){
+  const del = resultados.filter(r=>r.metodo===metodo);
+  if (!del.length) return null;
+  const pass = del.find(r=>r.resultado==="pass");
+  if (pass) return pass;
+  const fail = del.find(r=>["fail","permerror"].includes(r.resultado));
+  return fail || del[0];
+}
+
+/* =====================================================================
+   4. PARSEO DE Received (el viaje)
+   ===================================================================== */
+function parsearReceived(valores){
+  return valores.map(v=>{
+    const de = (v.match(/from\s+([^\s(;]+)/i)||[])[1] || null;
+    const ip = (v.match(/\[(\d{1,3}(?:\.\d{1,3}){3})\]/)||[])[1] || null;
+    const por = (v.match(/by\s+([^\s(;]+)/i)||[])[1] || null;
+    const tls = /TLS/i.test(v);
+    const fechaTxt = v.split(";").pop().trim();
+    const fecha = new Date(fechaTxt);
+    return {de, ip, por, tls, fecha: isNaN(fecha)?null:fecha, crudo:v};
+  });
+}
+
+/* =====================================================================
+   5. ANÁLISIS PRINCIPAL
+   ===================================================================== */
+function analizar(){
+  const raw = document.getElementById("entrada").value;
+  if (!raw.trim()){ alert("Pega primero unas cabeceras."); return; }
+  const H = parsearCabeceras(raw);
+  const $ = id => document.getElementById(id);
+
+  /* ---- Datos base ---- */
+  const fromAddr = extraerDireccion(primera(H,"from"));
+  const rpAddr   = extraerDireccion(primera(H,"return-path"));
+  const replyAddr= extraerDireccion(primera(H,"reply-to"));
+  const fromDom = dominioDe(fromAddr), rpDom = dominioDe(rpAddr), replyDom = dominioDe(replyAddr);
+  const auth = parsearAuth(todas(H,"authentication-results"));
+  const authPrevios = parsearAuth(todas(H,"arc-authentication-results")); // veredictos ANTES del reenvío
+  const received = parsearReceived(todas(H,"received"));
+  const banderas = [];
+  function bandera(nivel, icono, html){ banderas.push({nivel, icono, html}); }
+
+  /* ¿Quién es tu proveedor? El servidor que firmó Authentication-Results */
+  const proveedor = auth.length ? registrable(auth[0].servidor) : null;
+
+  /* ¿Hay un reenviador/alias por medio? */
+  const pistasReenvio = [rpAddr, primera(H,"x-simplelogin-type") ? "simplelogin" : null,
+    ...received.map(r=>r.de)].filter(Boolean).join(" ");
+  const reenviador = esReenviador(pistasReenvio);
+  const fromOriginal = extraerDireccion(primera(H,"x-simplelogin-original-from") || primera(H,"x-pm-original-from"));
+
+  /* ---- SEMÁFOROS ---- */
+  const semDiv = $("semaforos"); semDiv.innerHTML="";
+  const metodos = [
+    ["spf","SPF","¿El servidor emisor tenía permiso del dominio del sobre?"],
+    ["dkim","DKIM","¿La firma criptográfica del dominio es válida?"],
+    ["dmarc","DMARC","¿El dominio del From que ves está respaldado?"],
+    ["arc","ARC","¿Un reenvío conservó los veredictos originales?"]
+  ];
+  const estados = {};
+  metodos.forEach(([clave, titulo, descr])=>{
+    const r = resumenAuth(auth, clave);
+    estados[clave] = r ? r.resultado : null;
+    let clase="na", texto="—", detalle="No presente";
+    if (r){
+      if (r.resultado==="pass"){ clase="ok"; texto="PASA"; }
+      else if (["fail","permerror"].includes(r.resultado)){ clase="mal"; texto="FALLA"; }
+      else { clase="neutro"; texto=r.resultado.toUpperCase(); }
+      detalle = (r.dominio ? "dominio: "+r.dominio : descr);
+    } else if (clave==="arc"){ detalle="Sin reenvío o sin cadena ARC"; }
+    const div=document.createElement("div");
+    div.className="luz "+clase;
+    div.innerHTML="<div class='metodo'>"+titulo+"</div><div class='estado'>"+texto+"</div><div class='detalle'>"+escaparHTML(detalle)+"</div>";
+    semDiv.appendChild(div);
+  });
+
+  /* Veredicto global: DMARC manda */
+  const vg = $("veredictoGlobal");
+  let vgClase, vgIcono, vgTitulo, vgTexto;
+  if (estados.dmarc==="pass"){
+    vgClase="vg-ok"; vgIcono="✓"; vgTitulo="Remitente autenticado";
+    vgTexto="Tu proveedor verificó que el dominio del remitente respalda este correo. Ojo: autenticado significa que ES quien dice ser, no que sea buena gente — un estafador puede enviar desde su propio dominio bien configurado.";
+  } else if (estados.dmarc && estados.dmarc!=="pass" || estados.spf==="fail" || estados.dkim==="fail"){
+    vgClase="vg-mal"; vgIcono="✕"; vgTitulo="Autenticación fallida: alta sospecha de suplantación";
+    vgTexto="Alguna comprobación clave falló. El remitente visible probablemente NO envió este correo. No pulses enlaces ni respondas.";
+  } else {
+    vgClase="vg-neutro"; vgIcono="!"; vgTitulo="Autenticación incompleta";
+    vgTexto="Faltan comprobaciones o quedaron en resultado neutro. No es prueba de fraude, pero tampoco hay respaldo: extrema la cautela.";
+  }
+  vg.className="veredicto-global "+vgClase;
+  vg.innerHTML="<div class='circulo'>"+vgIcono+"</div><div><strong>"+vgTitulo+"</strong><span>"+vgTexto+"</span></div>";
+  $("resumen").style.display="block";
+
+  /* ---- CARA A CARA DE REMITENTES ---- */
+  $("fromDir").textContent = fromAddr || "(no encontrado)";
+  $("fromDom").textContent = fromDom || "—";
+  $("rpDir").textContent = rpAddr || "(no encontrado)";
+  $("rpDom").textContent = rpDom || "—";
+  const franja = $("franjaRemitentes");
+  if (fromDom && rpDom && registrable(fromDom)===registrable(rpDom)){
+    franja.className="franja ok";
+    franja.textContent="✓ Coinciden: el remitente visible y el técnico son del mismo dominio.";
+  } else if (reenviador){
+    franja.className="franja reenvio";
+    franja.innerHTML="⇄ Divergen, pero hay un motivo legítimo: un servicio de alias/reenvío ("+escaparHTML(reenviador)+") reescribió el remitente técnico, como exige el estándar para no romper SPF."+
+      (fromOriginal ? " Remitente original real: <b>"+escaparHTML(fromOriginal)+"</b>." : "");
+  } else if (fromDom && rpDom){
+    franja.className="franja mal";
+    franja.textContent="✕ Divergen sin motivo aparente: el correo dice venir de "+fromDom+" pero el sobre técnico es de "+rpDom+". Patrón clásico de suplantación.";
+  } else {
+    franja.className="franja mal";
+    franja.textContent="No se pudieron comparar (falta alguno de los dos).";
+  }
+  const rt = $("replyTo");
+  if (replyAddr && fromDom && replyDom && registrable(replyDom)!==registrable(fromDom)){
+    const rtReenvio = esReenviador(replyAddr);
+    rt.className = "franja "+(rtReenvio ? "reenvio" : "mal");
+    rt.style.display="block";
+    rt.innerHTML = rtReenvio
+      ? "⇄ El <b>Reply-To</b> apunta a tu alias ("+escaparHTML(replyDom)+"): así tu respuesta también viaja por el servicio de alias sin revelar tu correo real."
+      : "✕ El <b>Reply-To</b> apunta a otro dominio ("+escaparHTML(replyDom)+"): si respondes, tu mensaje NO va al remitente visible. Truco habitual en fraude del CEO y facturas falsas.";
+  } else { rt.style.display="none"; }
+  $("remitentes").style.display="block";
+
+  /* ---- LÍNEA DE TIEMPO (Received se lee de abajo arriba) ---- */
+  const tiempo = $("tiempo"); tiempo.innerHTML="";
+  const saltos = received.slice().reverse();   // ahora [0] = origen
+  saltos.forEach((s,i)=>{
+    const esProveedor = proveedor && ((s.por||"").includes(proveedor) || (s.por||"").includes("proton"));
+    const esFwd = esReenviador((s.de||"")+" "+(s.por||""));
+    const div=document.createElement("div");
+    div.className="salto"+(esProveedor?" confianza":esFwd?" reenviador":"");
+    const etiqueta = esProveedor
+      ? "<span class='etiqueta et-confianza'>Zona de confianza · tu proveedor</span>"
+      : esFwd
+      ? "<span class='etiqueta et-reenviador'>Reenviador de alias</span>"
+      : (i===0 ? "<span class='etiqueta et-origen'>Origen declarado · no verificable</span>"
+               : "<span class='etiqueta et-origen'>No verificable</span>");
+    div.innerHTML = etiqueta+
+      "<div class='quien'>"+escaparHTML(s.de||"(origen no declarado)")+(s.ip?" · "+s.ip:"")+"</div>"+
+      "<div class='meta'>recibido por <b>"+escaparHTML(s.por||"?")+"</b>"+
+      (s.fecha?" · "+s.fecha.toLocaleString():"")+
+      (s.tls?" · cifrado TLS ✓":" · <b>sin cifrar</b>")+"</div>";
+    tiempo.appendChild(div);
+    if (i < saltos.length-1 && s.fecha && saltos[i+1].fecha){
+      const seg = Math.round((saltos[i+1].fecha - s.fecha)/1000);
+      const d=document.createElement("div");
+      d.className="delta"+(seg>300?" lento":"");
+      d.textContent="↑ "+(seg<0?"¿fecha incoherente?":seg+" segundos hasta el siguiente salto"+(seg>300?" — retraso inusual":""));
+      tiempo.appendChild(d);
+    }
+  });
+  $("viaje").style.display="block";
+
+  /* ---- BANDERAS ---- */
+  if (reenviador){
+    bandera("violeta","⇄","Correo reenviado por un servicio de alias (<code>"+escaparHTML(reenviador)+"</code>). Esto reescribe remitentes de forma legítima; los veredictos del tramo original se conservan en la cadena ARC.");
+  }
+  if (authPrevios.length){
+    const dmarcPrevio = resumenAuth(authPrevios,"dmarc");
+    const spfPrevio = resumenAuth(authPrevios,"spf");
+    bandera(dmarcPrevio && dmarcPrevio.resultado==="pass" ? "verde" : "ambar","⧉",
+      "La cadena <b>ARC</b> guarda el veredicto de ANTES del reenvío: "+
+      (dmarcPrevio?("DMARC del remitente original (<code>"+escaparHTML(dmarcPrevio.dominio||"?")+"</code>): <b>"+dmarcPrevio.resultado+"</b>. "):"")+
+      (spfPrevio&&spfPrevio.dominio?("Enviado técnicamente por <code>"+escaparHTML(spfPrevio.dominio)+"</code>."):""));
+  }
+  if (estados.spf==="fail") bandera("rojo","✕","SPF falló: el servidor que envió el correo no tiene permiso del dominio del sobre.");
+  if (estados.dkim==="fail") bandera("rojo","✕","DKIM falló: la firma no valida — el mensaje se alteró o la firma es falsa.");
+  if (estados.dmarc && estados.dmarc!=="pass") bandera("rojo","✕","DMARC no pasó: el dominio visible del From no respalda este correo.");
+  if (!auth.length) bandera("ambar","!","No hay cabecera <code>Authentication-Results</code>: tu proveedor no dejó veredicto, o las cabeceras están incompletas. Sin ella, esta app no puede evaluar la autenticación.");
+  const sinTLS = received.some(r=>!r.tls);
+  if (sinTLS) bandera("ambar","!","Algún salto viajó sin cifrado TLS: el contenido pudo leerse en tránsito. Común en servidores antiguos; no implica fraude por sí solo.");
+  const subj = primera(H,"subject");
+  if (subj && /urgente|verifica|suspendid|bloquead|premio|factura pendiente/i.test(subj)){
+    bandera("ambar","!","El asunto usa lenguaje de presión («"+escaparHTML(subj)+"»). No es prueba técnica, pero acompaña a la mayoría del phishing.");
+  }
+  if (!banderas.length) bandera("verde","✓","Sin señales negativas: autenticación en orden y remitentes coherentes.");
+
+  const lb = $("listaBanderas"); lb.innerHTML="";
+  banderas.forEach(b=>{
+    const div=document.createElement("div");
+    div.className="bandera b-"+b.nivel;
+    div.innerHTML="<span class='icono'>"+b.icono+"</span><span>"+b.html+"</span>";
+    lb.appendChild(div);
+  });
+  $("banderas").style.display="block";
+
+  /* ---- FICHA ---- */
+  const ficha = $("ficha"); ficha.innerHTML="";
+  [["Asunto", subj],["Fecha", primera(H,"date")],["Message-Id", primera(H,"message-id")],
+   ["Para", extraerDireccion(primera(H,"to"))],
+   ["Remitente original", fromOriginal],
+   ["Saltos Received", String(received.length)]
+  ].forEach(([k,v])=>{
+    if (!v) return;
+    const div=document.createElement("div");
+    div.className="fila-dato";
+    div.innerHTML="<span class='k'>"+k+"</span><span class='v'>"+escaparHTML(v)+"</span>";
+    ficha.appendChild(div);
+  });
+  $("otrosDatos").style.display="block";
+}
+
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   6. EJEMPLO REAL EMBEBIDO (el correo AliExpress→SES→SimpleLogin→Proton,
+   anonimizado). Sirve para aprender sin tener un correo a mano.
+   ===================================================================== */
+const EJEMPLO = `Return-Path: <sl.reescrito.fyy2xbixcd4f4@passinbox.com>
+Delivered-To: usuario@proton.me
+Authentication-Results: mail.protonmail.ch; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=passinbox.com header.a=rsa-sha256
+Authentication-Results: mail.protonmail.ch; dmarc=pass (p=quarantine dis=none) header.from=passinbox.com
+Authentication-Results: mail.protonmail.ch; spf=pass smtp.mailfrom=passinbox.com
+Authentication-Results: mail.protonmail.ch; arc=pass smtp.remote-ip=79.135.107.167 arc.chain=:simplelogin.co
+Received: from mail-107167.simplelogin.co (mail-107167.simplelogin.co [79.135.107.167]) (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)) by mailinzur1015.protonmail.ch (Postfix) with ESMTPS id 4gLlrb1tb5z9vNQR for <usuario@proton.me>; Thu, 21 May 2026 11:03:27 +0000 (UTC)
+Arc-Authentication-Results: i=1; mail.protonmail.ch; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=notice.aliexpress.com header.a=rsa-sha256; dkim=pass (Good 1024 bit rsa-sha256 signature) header.d=amazonses.com header.a=rsa-sha256; dmarc=pass (p=quarantine dis=none) header.from=notice.aliexpress.com; spf=pass smtp.mailfrom=alibaba.notice.aliexpress.com
+Dkim-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=passinbox.com; s=dkim; t=1779361407; h=from:subject:date:to; bh=...; b=...
+Subject: Paquete 28018000771518699 entregado
+Message-Id: <010e019e4a3452c1@ap-southeast-1.amazonses.com>
+Date: Thu, 21 May 2026 11:03:23 +0000
+X-Simplelogin-Type: Forward
+X-Simplelogin-Envelope-From: 010e019e4a3452c1@alibaba.notice.aliexpress.com
+X-Simplelogin-Original-From: AliExpress <transaction@notice.aliexpress.com>
+From: AliExpress <transaction@notice.aliexpress.com>
+To: alias@passinbox.com
+Reply-To: "AliExpress" <transaction_at_notice_aliexpress_com@passinbox.com>
+X-Pm-Origin: external
+X-Pm-Spamscore: 0`;
+
+/* =====================================================================
+   7. EVENTOS
+   ===================================================================== */
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnEjemplo").addEventListener("click", ()=>{
+  document.getElementById("entrada").value = EJEMPLO;
+  analizar();
+});
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("entrada").value="";
+  ["resumen","remitentes","viaje","banderas","otrosDatos"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("entrada").focus();
+});
+</script>
+</body>
+</html>

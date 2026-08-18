@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verificador de Tipo Real de Archivo</title>
+<style>
+  :root{
+    /* Modo oscuro cómodo: fondo gris muy oscuro (no negro puro, que fatiga),
+       verde menta como acento (no neón, que vibra), texto gris claro (no blanco puro). */
+    --fondo:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --rojo:#f85149;  --rojo-suave:#2c1618;
+    --azul:#58a6ff;  --azul-suave:#132844;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --gris:#8b949e;  --gris-suave:#21262d;
+    --tenue:#8b949e;                     /* texto secundario */
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+  .contenedor{max-width:880px;margin:0 auto}
+  header{text-align:center;margin-bottom:1.6rem;padding:0 .5rem}
+  h1{font-size:1.55rem;letter-spacing:-.01em;color:#e6edf3}
+  h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}   /* guiño terminal, discreto */
+  header p{color:var(--tenue);font-size:.95rem;margin-top:.5rem;line-height:1.5;max-width:640px;margin:.5rem auto 0}
+  .panel{background:var(--panel);border:1px solid var(--linea);border-radius:16px;padding:1.3rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25)}
+  label.tit{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.7rem}
+
+  /* Zona de carga */
+  .dropzone{border:2px dashed var(--linea);border-radius:14px;padding:2rem 1rem;text-align:center;background:#0d1117;transition:border-color .15s,background .15s;cursor:pointer}
+  .dropzone.hover{border-color:var(--verde);background:var(--verde-suave)}
+  .dropzone .ic{font-size:2rem;display:block;margin-bottom:.5rem}
+  .dropzone .grande{font-weight:700;font-size:1rem;color:#e6edf3}
+  .dropzone .chico{font-size:.82rem;color:var(--tenue);margin-top:.3rem}
+  input[type=file]{display:none}
+  .botones{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap;justify-content:center}
+  button{font-family:var(--sans);font-weight:600;font-size:.85rem;padding:.55rem 1.1rem;border-radius:10px;cursor:pointer;border:1px solid var(--linea)}
+  .btn-sec{background:var(--gris-suave);color:var(--tinta)}
+  .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+  button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+  .ejemplos{margin-top:1rem;font-size:.8rem;color:var(--tenue);text-align:center}
+  .ejemplos b{display:block;margin-bottom:.4rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue)}
+
+  /* Veredicto grande */
+  #resultado{display:none}
+  .veredicto{display:flex;align-items:center;gap:1rem;border-radius:14px;padding:1.1rem 1.2rem;border:2px solid;margin-bottom:1rem}
+  .veredicto .circulo{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#0d1117;font-weight:800}
+  .veredicto .txt strong{display:block;font-size:1.1rem;line-height:1.2}
+  .veredicto .txt span{font-size:.88rem;line-height:1.4;display:block;margin-top:.25rem;color:var(--tinta)}
+  .v-ok{background:var(--verde-suave);border-color:var(--verde)} .v-ok .circulo{background:var(--verde)} .v-ok strong{color:var(--verde)}
+  .v-mal{background:var(--rojo-suave);border-color:var(--rojo)} .v-mal .circulo{background:var(--rojo)} .v-mal strong{color:var(--rojo)}
+  .v-neutro{background:var(--ambar-suave);border-color:var(--ambar)} .v-neutro .circulo{background:var(--ambar)} .v-neutro strong{color:var(--ambar)}
+
+  /* Cara a cara: dice ser vs. es */
+  .comparativa{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem}
+  @media (max-width:560px){ .comparativa{grid-template-columns:1fr} }
+  .tarjeta{border:2px solid var(--linea);border-radius:12px;padding:.9rem 1rem;background:#0d1117}
+  .tarjeta h3{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:.4rem}
+  .tarjeta .val{font-family:var(--mono);font-size:1rem;font-weight:700;word-break:break-all;color:#e6edf3}
+  .tarjeta.res-ok{border-color:var(--verde);background:var(--verde-suave)} .tarjeta.res-ok .val{color:var(--verde)}
+  .tarjeta.res-mal{border-color:var(--rojo);background:var(--rojo-suave)} .tarjeta.res-mal .val{color:var(--rojo)}
+
+  /* Ficha */
+  .fila{display:flex;gap:.6rem;padding:.4rem 0;border-bottom:1px dashed var(--linea);font-size:.86rem}
+  .fila:last-child{border-bottom:none}
+  .fila .k{flex:0 0 130px;font-weight:700;color:var(--tenue)}
+  .fila .v{font-family:var(--mono);word-break:break-all;color:var(--tinta)}
+
+  /* Careo didáctico de firmas */
+  .compara-firma{display:none;border:2px solid var(--ambar);background:var(--ambar-suave);border-radius:12px;padding:1rem;margin-bottom:1rem}
+  .compara-firma .titulo{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ambar);margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
+  .cf-fila{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem}
+  .cf-fila:last-of-type{margin-bottom:0}
+  .cf-etq{flex:0 0 42%;font-size:.8rem;line-height:1.3}
+  .cf-etq b{display:block;color:#e6edf3}
+  .cf-etq span{color:var(--tenue);font-size:.74rem}
+  .cf-bytes{flex:1;font-family:var(--mono);font-size:.9rem;font-weight:700;padding:.5rem .6rem;border-radius:8px;letter-spacing:.03em;word-break:break-all}
+  .cf-bytes .asc{display:block;font-size:.72rem;font-weight:400;opacity:.7;margin-top:.1rem}
+  .cf-esperada .cf-bytes{background:#0d1117;border:1px solid var(--linea);color:var(--verde)}
+  .cf-real .cf-bytes{background:var(--rojo);color:#0d1117}
+  .cf-veredicto{margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--ambar);font-size:.85rem;font-weight:600;color:var(--ambar);text-align:center}
+
+  .aviso-extra{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.75rem .9rem;margin-bottom:.6rem;font-size:.85rem;line-height:1.5;border:1px solid}
+  .aviso-extra .ic{flex-shrink:0;font-weight:800}
+  .aviso-extra b{color:#e6edf3}
+  .av-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+  .av-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+
+  /* Hex dump: el protagonista. 8 bytes/fila para caber en móvil sin scroll */
+  .hexwrap{overflow-x:auto;background:#010409;border:1px solid var(--linea);border-radius:12px;padding:.8rem .6rem}
+  table.hex{border-collapse:collapse;font-family:var(--mono);font-size:.8rem;color:#8fb39a;margin:0 auto}
+  table.hex td{padding:.1rem .22rem;text-align:center}
+  table.hex .off{color:#4d5b52;padding-right:.5rem;text-align:right;-webkit-user-select:none;user-select:none}
+  table.hex .asc-cell{padding-left:.5rem;border-left:1px solid #21372a}
+  table.hex .byte{color:#7ee787}                 /* bytes en verde terminal suave */
+  table.hex .ch{color:#4d7a56}
+  table.hex .byte.magia{background:var(--ambar);color:#010409;border-radius:3px;font-weight:700}
+  table.hex .ch.magia{background:var(--ambar);color:#010409;border-radius:3px;font-weight:700;padding:0 1px}
+  @media (min-width:560px){ table.hex{font-size:.88rem} table.hex td{padding:.12rem .35rem} }
+  .leyenda{font-size:.78rem;color:var(--tenue);margin-top:.7rem;display:flex;align-items:center;gap:.4rem}
+  .leyenda .muestra{display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--ambar);flex-shrink:0}
+
+  details{margin-top:.9rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+  summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+  details[open] summary{border-bottom:1px solid var(--linea)}
+  details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.55;color:#adbac7}
+  details .cuerpo b{color:#e6edf3}
+  details .cuerpo code{font-family:var(--mono);background:#010409;border:1px solid var(--linea);border-radius:4px;padding:.05rem .35rem;font-size:.8rem;color:var(--verde)}
+  details .cuerpo table{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.8rem}
+  details .cuerpo table td{padding:.3rem .4rem;border-bottom:1px solid var(--linea)}
+  details .cuerpo table td:first-child{font-family:var(--mono);color:var(--verde);white-space:nowrap}
+
+  footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <header>
+    <h1>Verificador de Tipo Real de Archivo</h1>
+    <p>La extensión (<code>.pdf</code>, <code>.jpg</code>) es solo una etiqueta que cualquiera puede cambiar. Los primeros bytes de un archivo — sus <b>magic bytes</b> — son su ADN real. Esta app los compara: te dice si el archivo <b>es lo que dice ser</b>.</p>
+  </header>
+
+  <section class="panel">
+    <label class="tit">Elige un archivo (no se sube a ningún sitio: se lee en tu móvil)</label>
+    <div class="dropzone" id="dropzone">
+      <span class="ic">📄</span>
+      <span class="grande">Toca para elegir un archivo</span>
+      <span class="chico">o arrástralo aquí · se leen solo los primeros bytes</span>
+    </div>
+    <input type="file" id="fileInput" accept="*/*">
+    <div class="ejemplos">
+      <b>¿Sin archivo a mano? Prueba estos casos</b>
+      <div class="botones">
+        <button class="btn-sec" data-ej="pdf-ok">PDF auténtico</button>
+        <button class="btn-sec" data-ej="exe-fake">"factura.pdf" trucado</button>
+        <button class="btn-sec" data-ej="png-ok">Imagen PNG</button>
+        <button class="btn-sec" data-ej="zip-doc">Documento .docx</button>
+        <button class="btn-sec" data-ej="doble-ext">Doble extensión</button>
+        <button class="btn-sec" data-ej="lnk-fake">Atajo .lnk disfrazado</button>
+        <button class="btn-sec" data-ej="macro-doc">Excel con macros</button>
+        <button class="btn-sec" data-ej="zip-cif">ZIP con contraseña</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultado" class="panel">
+    <div id="veredicto"></div>
+    <div class="comparativa">
+      <div class="tarjeta" id="tarjDice">
+        <h3>Dice ser (por su nombre)</h3>
+        <div class="val" id="valDice">—</div>
+      </div>
+      <div class="tarjeta" id="tarjEs">
+        <h3>Es en realidad (por sus bytes)</h3>
+        <div class="val" id="valEs">—</div>
+      </div>
+    </div>
+
+    <div id="comparaFirma" class="compara-firma"></div>
+    <div id="avisos" style="display:none"></div>
+
+    <label class="tit">Los bytes del archivo, en crudo</label>
+    <div class="hexwrap"><table class="hex" id="hexTabla"></table></div>
+    <div class="leyenda"><span class="muestra"></span> resaltados: los magic bytes que identifican el tipo real</div>
+
+    <div id="fichaFila" style="margin-top:1.1rem"></div>
+
+    <details>
+      <summary>¿Qué son los magic bytes y qué firmas conoce esta app?</summary>
+      <div class="cuerpo">
+        Casi todo formato binario empieza con una <b>firma fija</b> que pone el programa que crea el archivo. No depende del nombre: un PDF empieza por <code>25 50 44 46</code> (que en texto es <code>%PDF</code>) aunque lo renombres a <code>.jpg</code>. Los formatos de solo texto (<code>.txt</code>, <code>.csv</code>, <code>.html</code>) no tienen firma, porque son texto puro.<br><br>
+        El truco de ataque clásico: renombrar un ejecutable (<code>.exe</code>) a <code>.pdf</code> o <code>.jpg</code> para que confíes y lo abras. La extensión miente, pero los magic bytes no: un ejecutable de Windows siempre empieza por <code>4D 5A</code> (<code>MZ</code>), pase lo que pase con su nombre. Esta app caza justo eso.<br><br>
+        <b>Firmas que reconoce:</b>
+        <table>
+          <tr><td>25 50 44 46</td><td>PDF</td></tr>
+          <tr><td>89 50 4E 47</td><td>PNG</td></tr>
+          <tr><td>FF D8 FF</td><td>JPEG</td></tr>
+          <tr><td>47 49 46 38</td><td>GIF</td></tr>
+          <tr><td>42 4D</td><td>BMP</td></tr>
+          <tr><td>RIFF…WEBP</td><td>WebP</td></tr>
+          <tr><td>50 4B 03 04</td><td>ZIP (y docx, xlsx, pptx, apk, jar…)</td></tr>
+          <tr><td>52 61 72 21</td><td>RAR</td></tr>
+          <tr><td>37 7A BC AF</td><td>7-Zip</td></tr>
+          <tr><td>1F 8B</td><td>GZIP</td></tr>
+          <tr><td>D0 CF 11 E0</td><td>Office antiguo (.doc, .xls, .ppt)</td></tr>
+          <tr><td>49 44 33 / FF FB</td><td>MP3</td></tr>
+          <tr><td>…ftyp</td><td>MP4 / vídeo</td></tr>
+          <tr><td>4D 5A</td><td>⚠ Ejecutable Windows (.exe, .dll)</td></tr>
+          <tr><td>7F 45 4C 46</td><td>⚠ Ejecutable Linux (ELF)</td></tr>
+          <tr><td>CA FE BA BE</td><td>⚠ Ejecutable Java / Mach-O</td></tr>
+          <tr><td>23 21 (#!)</td><td>⚠ Script ejecutable</td></tr>
+        </table>
+      </div>
+    </details>
+    <details>
+      <summary>Límites honestos de esta comprobación</summary>
+      <div class="cuerpo">
+        Los magic bytes prueban el <b>formato</b>, no la <b>inocencia</b>. Un PDF con firma correcta puede seguir siendo malicioso (llevar un exploit dentro), y un ZIP legítimo puede contener malware. Esto solo detecta el <b>engaño de disfraz</b>: cuando la extensión no cuadra con el formato real.<br><br>
+        Tampoco mira más allá de los primeros bytes: no analiza el contenido completo, no descomprime, no ejecuta nada. Y algunos formatos comparten firma (todo lo basado en ZIP: docx, xlsx, apk…), así que ahí solo puede decirte "es un ZIP o derivado", no cuál exactamente sin mirar dentro.
+      </div>
+    </details>
+  </section>
+
+  <footer>Herramienta educativa · El archivo se lee localmente en tu navegador; nada se envía a internet.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   TABLA DE FIRMAS (magic bytes) — verificadas con archivos reales.
+   Cada firma: bytes esperados, en qué posición (offset), y su id/nombre.
+   'peligro:true' marca formatos ejecutables (el caso de fraude grave).
+   ===================================================================== */
+const FIRMAS = [
+  // Ejecutables — los peligrosos van primero para no confundir
+  {id:"exe",  nombre:"Ejecutable de Windows (.exe/.dll)", bytes:[0x4D,0x5A], off:0, peligro:true},
+  {id:"elf",  nombre:"Ejecutable de Linux (ELF)",         bytes:[0x7F,0x45,0x4C,0x46], off:0, peligro:true},
+  {id:"macho",nombre:"Ejecutable Java/Mach-O",            bytes:[0xCA,0xFE,0xBA,0xBE], off:0, peligro:true},
+  {id:"macho2",nombre:"Ejecutable Mach-O (macOS)",        bytes:[0xFE,0xED,0xFA,0xCE], off:0, peligro:true},
+  {id:"script",nombre:"Script ejecutable (#!)",           bytes:[0x23,0x21], off:0, peligro:true},
+  // Documentos
+  {id:"pdf",  nombre:"PDF",       bytes:[0x25,0x50,0x44,0x46], off:0},
+  {id:"rtf",  nombre:"RTF",       bytes:[0x7B,0x5C,0x72,0x74,0x66], off:0},
+  {id:"ole",  nombre:"Office antiguo (.doc/.xls/.ppt)", bytes:[0xD0,0xCF,0x11,0xE0], off:0},
+  // Imágenes
+  {id:"png",  nombre:"PNG",       bytes:[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A], off:0},
+  {id:"jpg",  nombre:"JPEG",      bytes:[0xFF,0xD8,0xFF], off:0},
+  {id:"gif",  nombre:"GIF",       bytes:[0x47,0x49,0x46,0x38], off:0},
+  {id:"bmp",  nombre:"BMP",       bytes:[0x42,0x4D], off:0},
+  {id:"tiff", nombre:"TIFF",      bytes:[0x49,0x49,0x2A,0x00], off:0},
+  {id:"tiff2",nombre:"TIFF",      bytes:[0x4D,0x4D,0x00,0x2A], off:0},
+  {id:"ico",  nombre:"Icono ICO", bytes:[0x00,0x00,0x01,0x00], off:0},
+  // RIFF (webp/wav/avi comparten RIFF, se distinguen en el offset 8)
+  {id:"webp", nombre:"WebP",      bytes:[0x57,0x45,0x42,0x50], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  {id:"wav",  nombre:"Audio WAV", bytes:[0x57,0x41,0x56,0x45], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  {id:"avi",  nombre:"Vídeo AVI", bytes:[0x41,0x56,0x49,0x20], off:8, extra:{pre:[0x52,0x49,0x46,0x46]}},
+  // Archivos comprimidos
+  {id:"zip",  nombre:"ZIP (o docx/xlsx/pptx/apk/jar)", bytes:[0x50,0x4B,0x03,0x04], off:0},
+  {id:"zip2", nombre:"ZIP vacío",                      bytes:[0x50,0x4B,0x05,0x06], off:0},
+  {id:"rar",  nombre:"RAR",       bytes:[0x52,0x61,0x72,0x21,0x1A,0x07], off:0},
+  {id:"7z",   nombre:"7-Zip",     bytes:[0x37,0x7A,0xBC,0xAF,0x27,0x1C], off:0},
+  {id:"gzip", nombre:"GZIP",      bytes:[0x1F,0x8B], off:0},
+  // Media
+  {id:"mp3",  nombre:"MP3",       bytes:[0x49,0x44,0x33], off:0},
+  {id:"mp3b", nombre:"MP3",       bytes:[0xFF,0xFB], off:0},
+  {id:"mp4",  nombre:"MP4 / vídeo", bytes:[0x66,0x74,0x79,0x70], off:4},
+  // Atajo de Windows: el atacante le pone el icono y el nombre que quiera
+  {id:"lnk",  nombre:"Atajo de Windows (.lnk)", bytes:[0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00], off:0, peligro:true},
+];
+
+/* Familias: qué firma-id se considera coherente con cada extensión.
+   Varios ids porque un formato puede tener variantes (jpg/jpeg, tiff...). */
+const EXT_FAMILIA = {
+  pdf:["pdf"], rtf:["rtf"],
+  doc:["ole","zip"], xls:["ole","zip"], ppt:["ole","zip"],
+  docx:["zip"], xlsx:["zip"], pptx:["zip"], apk:["zip"], jar:["zip"], epub:["zip"], odt:["zip"],
+  docm:["zip"], xlsm:["zip"], pptm:["zip"], xltm:["zip"], xlsb:["zip"],
+  png:["png"], jpg:["jpg"], jpeg:["jpg"], gif:["gif"], bmp:["bmp"],
+  tif:["tiff","tiff2"], tiff:["tiff","tiff2"], ico:["ico"], webp:["webp"],
+  wav:["wav"], avi:["avi"], mp3:["mp3","mp3b"], mp4:["mp4"], m4a:["mp4"], mov:["mp4"],
+  zip:["zip","zip2"], rar:["rar"], "7z":["7z"], gz:["gzip"], tgz:["gzip"],
+  exe:["exe"], dll:["exe"], scr:["exe"], com:["exe"], cpl:["exe"], sys:["exe"],
+  lnk:["lnk"], "class":["macho"],
+};
+/* Extensiones de texto plano: es normal que NO tengan firma */
+const EXT_TEXTO = new Set(["txt","csv","html","htm","json","xml","svg","md","log","css","js","ini","yml","yaml",
+                           "bat","cmd","vbs","vbe","jse","wsf","ps1","hta","au3","sh","py","reg"]);
+
+/* Extensiones que ejecutan código. Un archivo con estas es peligroso POR SÍ MISMO,
+   tenga la firma que tenga. Fuente: top de extensiones usadas en campañas maliciosas. */
+const EXT_EJECUTABLE = {
+  exe:"ejecutable de Windows", dll:"biblioteca de Windows (se carga desde otro programa)",
+  scr:"salvapantallas — es un ejecutable con otro nombre", com:"ejecutable heredado de Windows",
+  cpl:"panel de control — ejecutable", sys:"controlador del sistema",
+  bat:"script por lotes de Windows", cmd:"script de consola de Windows",
+  vbs:"script de Visual Basic", vbe:"script VBScript codificado",
+  js:"JavaScript — fuera del navegador se ejecuta como programa", jse:"JavaScript codificado",
+  wsf:"Windows Script File", ps1:"script de PowerShell",
+  hta:"aplicación HTML — se ejecuta fuera del navegador, sin sus protecciones",
+  au3:"script de AutoIt", jar:"aplicación Java", msi:"instalador de Windows",
+  lnk:"atajo de Windows — puede llevar cualquier comando oculto",
+  reg:"modifica el registro de Windows", sh:"script de shell", py:"script de Python"
+};
+
+/* Extensiones que ejecutan macros: legítimas, pero exigen desconfianza */
+const EXT_MACRO = new Set(["docm","xlsm","pptm","xltm","xlsb","dotm","potm","ppsm"]);
+
+/* Formatos que, siendo auténticos, pueden llevar contenido activo dentro */
+const EXT_CONTENIDO_ACTIVO = {
+  pdf:"Un PDF auténtico puede contener enlaces, formularios y scripts. El riesgo también depende del lector: mantén Acrobat actualizado y desactiva su JavaScript.",
+  docx:"Un DOCX auténtico puede llevar enlaces o referencias que hagan a Word conectarse a servidores externos.",
+  xlsx:"Un XLSX auténtico no lleva macros, pero sí puede consultar fuentes externas y conectarse a la web en segundo plano.",
+  pptx:"Puede incluir enlaces y objetos incrustados que conecten con el exterior.",
+  svg:"Un SVG es XML y admite scripts dentro. Trátalo como código, no como una imagen inerte.",
+  htm:"Las páginas guardadas se usan como formularios de phishing locales.",
+  html:"Las páginas guardadas se usan como formularios de phishing locales."
+};
+
+/* Extensiones que un documento o imagen normal NUNCA tendría como penúltima
+   parte del nombre. Sirven para detectar la doble extensión. */
+const EXT_SENUELO = new Set(["pdf","doc","docx","xls","xlsx","ppt","pptx","txt","rtf","csv",
+                             "jpg","jpeg","png","gif","bmp","webp","mp3","mp4","zip","rar"]);
+
+function hex2(n){ return n.toString(16).padStart(2,"0"); }
+
+/* ---- Doble extensión: factura.pdf.exe ----
+   Windows oculta por defecto la extensión conocida, así que la víctima solo ve
+   "factura.pdf". Se detecta por el NOMBRE, sin mirar los bytes. */
+function detectarDobleExtension(nombre){
+  const partes = nombre.toLowerCase().split(".");
+  if (partes.length < 3) return null;                 // necesita nombre + 2 extensiones
+  const ultima = partes[partes.length-1];
+  const penultima = partes[partes.length-2];
+  if (!EXT_SENUELO.has(penultima)) return null;       // la penúltima debe parecer un documento
+  const peligrosa = EXT_EJECUTABLE[ultima];
+  return {
+    senuelo: penultima,
+    real: ultima,
+    peligrosa: !!peligrosa,
+    queEs: peligrosa || null,
+    visible: partes.slice(0, partes.length-1).join(".")   // lo que Windows enseñaría
+  };
+}
+
+/* ---- ZIP cifrado ----
+   En la cabecera local del ZIP, el bit 0 del campo "general purpose flag"
+   (offset 6) indica que el contenido está protegido con contraseña. */
+function zipCifrado(bytes){
+  if (bytes.length < 8) return false;
+  if (!(bytes[0]===0x50 && bytes[1]===0x4B && bytes[2]===0x03 && bytes[3]===0x04)) return false;
+  return (bytes[6] & 0x01) === 1;
+}
+
+function coincide(bytes, firma){
+  const o = firma.off || 0;
+  if (firma.extra && firma.extra.pre){
+    for (let i=0;i<firma.extra.pre.length;i++) if (bytes[i]!==firma.extra.pre[i]) return false;
+  }
+  for (let i=0;i<firma.bytes.length;i++){
+    if (bytes[o+i] !== firma.bytes[i]) return false;
+  }
+  return true;
+}
+function detectar(bytes){
+  for (const f of FIRMAS){ if (coincide(bytes,f)) return f; }
+  return null;
+}
+/* Rango de bytes a resaltar en el hex dump para la firma detectada */
+function rangoMagia(firma){
+  if (!firma) return null;
+  const o = firma.off || 0;
+  if (firma.extra && firma.extra.pre){
+    return [{ini:0,fin:firma.extra.pre.length-1},{ini:o,fin:o+firma.bytes.length-1}];
+  }
+  return [{ini:o,fin:o+firma.bytes.length-1}];
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function esMagia(idx, rangos){
+  if (!rangos) return false;
+  return rangos.some(r => idx>=r.ini && idx<=r.fin);
+}
+
+function pintarHex(bytes, rangos){
+  const tabla = document.getElementById("hexTabla");
+  tabla.innerHTML="";
+  const PORFILA = 8;                           // 8/fila cabe en pantalla de móvil sin scroll
+  const total = Math.min(bytes.length, 128);   // primeros 128 bytes bastan
+  for (let fila=0; fila*PORFILA < total; fila++){
+    const tr = document.createElement("tr");
+    const base = fila*PORFILA;
+    let html = "<td class='off'>"+base.toString(16).padStart(6,"0")+"</td>";
+    // columna hex
+    for (let i=0;i<PORFILA;i++){
+      const idx = base+i;
+      if (idx<total){
+        const cls = esMagia(idx,rangos) ? "byte magia" : "byte";
+        html += "<td class='"+cls+"'>"+hex2(bytes[idx])+"</td>";
+      } else html += "<td class='byte'>&nbsp;&nbsp;</td>";
+    }
+    // columna ascii
+    html += "<td class='asc-cell'>";
+    for (let i=0;i<PORFILA;i++){
+      const idx = base+i;
+      if (idx<total){
+        const b = bytes[idx];
+        const c = (b>=32 && b<127) ? String.fromCharCode(b) : ".";
+        const cls = esMagia(idx,rangos) ? "ch magia" : "ch";
+        html += "<span class='"+cls+"'>"+(c==="<"?"&lt;":c==="&"?"&amp;":c)+"</span>";
+      }
+    }
+    html += "</td>";
+    tr.innerHTML = html;
+    tabla.appendChild(tr);
+  }
+}
+
+/* Firma que DEBERÍA tener un archivo según su extensión declarada.
+   Devuelve {hex, ascii, nombre} o null si la extensión no tiene firma fija. */
+function firmaEsperada(ext){
+  const ids = EXT_FAMILIA[ext];
+  if (!ids || !ids.length) return null;
+  const f = FIRMAS.find(x=>x.id===ids[0]);
+  if (!f) return null;
+  const bs = (f.extra && f.extra.pre) ? f.extra.pre.concat(f.bytes) : f.bytes;
+  const ascii = bs.map(b => (b>=32 && b<127) ? String.fromCharCode(b) : "·").join("");
+  return { hex: bs.map(hex2).join(" "), ascii, nombre: f.nombre };
+}
+/* Pinta el careo esperada-vs-real. Devuelve true si lo mostró. */
+function pintarCareo(ext, bytesReales){
+  const cont = document.getElementById("comparaFirma");
+  const esp = firmaEsperada(ext);
+  if (!esp){ cont.style.display="none"; return; }
+  const realBs = [...bytesReales.slice(0, Math.max(esp.hex.split(" ").length,4))];
+  const realHex = realBs.map(hex2).join(" ");
+  const realAsc = realBs.map(b => (b>=32 && b<127) ? String.fromCharCode(b) : "·").join("");
+  cont.innerHTML =
+    "<div class='titulo'>⚖ Careo de firmas · lo que promete «."+escaparHTML(ext)+"» vs lo que trae</div>"+
+    "<div class='cf-fila cf-esperada'>"+
+      "<div class='cf-etq'><b>Un ."+escaparHTML(ext)+" debería empezar por</b><span>"+escaparHTML(esp.nombre)+"</span></div>"+
+      "<div class='cf-bytes'>"+esp.hex+"<span class='asc'>"+escaparHTML(esp.ascii)+"</span></div>"+
+    "</div>"+
+    "<div class='cf-fila cf-real'>"+
+      "<div class='cf-etq'><b>Tu archivo empieza por</b><span>y eso no es un ."+escaparHTML(ext)+"</span></div>"+
+      "<div class='cf-bytes'>"+realHex+"<span class='asc'>"+escaparHTML(realAsc)+"</span></div>"+
+    "</div>"+
+    "<div class='cf-veredicto'>✗ Las firmas no coinciden: la extensión no dice la verdad</div>";
+  cont.style.display="block";
+}
+
+function nombreExtension(id){
+  const f = FIRMAS.find(x=>x.id===id);
+  return f ? f.nombre : id;
+}
+
+function analizar(bytes, nombreArchivo, tam){
+  const $ = id => document.getElementById(id);
+  const ext = (nombreArchivo.split(".").pop()||"").toLowerCase();
+  const tieneExt = nombreArchivo.includes(".");
+  const firma = detectar(bytes);
+  const rangos = rangoMagia(firma);
+
+  // Ficha
+  $("fichaFila").innerHTML =
+    "<div class='fila'><span class='k'>Nombre</span><span class='v'>"+escaparHTML(nombreArchivo)+"</span></div>"+
+    "<div class='fila'><span class='k'>Extensión</span><span class='v'>"+(tieneExt?("."+escaparHTML(ext)):"(sin extensión)")+"</span></div>"+
+    "<div class='fila'><span class='k'>Tamaño</span><span class='v'>"+formatoTam(tam)+"</span></div>"+
+    "<div class='fila'><span class='k'>Primeros bytes</span><span class='v'>"+[...bytes.slice(0,8)].map(hex2).join(" ")+"</span></div>";
+
+  // Comparativa
+  $("valDice").textContent = tieneExt ? ("."+ext) : "(sin nombre de tipo)";
+  $("valEs").textContent = firma ? firma.nombre : "Sin firma reconocible";
+
+  // Lógica de veredicto
+  const familia = EXT_FAMILIA[ext] || null;
+  const esTexto = EXT_TEXTO.has(ext);
+  const doble = detectarDobleExtension(nombreArchivo);
+  const ejecutablePorExt = EXT_EJECUTABLE[ext] || null;
+  let clase, icono, titulo, detalle, resDice="", resEs="", mostrarCareo=false;
+  let avisos = [];
+
+  if (doble && doble.peligrosa){
+    // MÁXIMA PRIORIDAD: el nombre delata la trampa, tengan los bytes lo que tengan.
+    clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+    titulo="¡PELIGRO! Doble extensión";
+    detalle="El archivo se llama «"+nombreArchivo+"»: aparenta ser un ."+doble.senuelo+
+            " pero su extensión real es ."+doble.real+" ("+doble.queEs+"). "+
+            "Windows oculta por defecto las extensiones conocidas, así que en el explorador verías solo «"+doble.visible+
+            "» y lo abrirías creyendo que es un documento. NO lo abras: casi siempre es una trampa.";
+    mostrarCareo = !!firma;
+  } else if (firma && firma.peligro){
+    // Contiene un ejecutable
+    const disfrazado = tieneExt && (!familia || !familia.includes(firma.id));
+    clase="v-mal"; icono="⚠"; resEs="res-mal";
+    if (disfrazado){
+      titulo="¡PELIGRO! Ejecutable disfrazado";
+      detalle="El archivo se llama «."+ext+"» pero por dentro es un "+firma.nombre+". Este es el truco clásico para que abras un programa creyendo que es un documento o una imagen. NO lo ejecutes.";
+      resDice="res-mal"; mostrarCareo=true;
+    } else {
+      titulo="Es un ejecutable";
+      detalle="El archivo es un "+firma.nombre+", y su extensión lo refleja. Trátalo con la cautela de cualquier programa: ejecútalo solo si sabes exactamente de dónde viene.";
+    }
+  } else if (ejecutablePorExt && !esTexto){
+    // La extensión ejecuta código aunque no haya firma binaria reconocible
+    clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+    titulo="Extensión que ejecuta código";
+    detalle="Un ."+ext+" es un "+ejecutablePorExt+". No es un documento: al abrirlo se ejecuta. Ábrelo solo si sabes exactamente qué hace y de dónde viene.";
+  } else if (!firma){
+    if (esTexto || !tieneExt){
+      if (ejecutablePorExt){
+        // Scripts: son texto, pero texto que se EJECUTA
+        clase="v-mal"; icono="⚠"; resDice="res-mal"; resEs="res-mal";
+        titulo="Es un script: texto que se ejecuta";
+        detalle="No tiene firma binaria porque es texto plano, pero un ."+ext+" es un "+ejecutablePorExt+
+                ". Un documento o una foto nunca tendrían esta extensión. Ábrelo con un editor de texto para leerlo, nunca con doble clic.";
+      } else {
+        clase="v-neutro"; icono="?"; titulo="Sin firma — probablemente texto plano";
+        detalle="No hay magic bytes reconocibles. Es lo normal en archivos de texto (."+ (tieneExt?ext:"txt") +"), que no tienen firma. Coherente, sin señal de engaño.";
+      }
+    } else {
+      clase="v-mal"; icono="✕"; titulo="Debería tener firma y no la tiene"; resEs="res-mal";
+      detalle="Un ."+ext+" auténtico empieza con una firma reconocible, y este archivo no la tiene. Puede estar corrupto, o no ser en realidad un ."+ext+". Sospecha.";
+      mostrarCareo=true;
+    }
+  } else if (esTexto){
+    // dice ser texto pero tiene firma binaria
+    clase="v-mal"; icono="✕"; titulo="Dice ser texto, pero es binario"; resDice="res-mal"; resEs="res-mal";
+    detalle="El nombre sugiere texto (."+ext+") pero por dentro es un "+firma.nombre+". Incoherente: revisa por qué.";
+  } else if (familia && familia.includes(firma.id)){
+    clase="v-ok"; icono="✓"; resDice="res-ok"; resEs="res-ok";
+    // El verde solo dice que extensión y contenido coinciden. NO dice "es seguro".
+    const conActivo = EXT_CONTENIDO_ACTIVO[ext];
+    titulo = conActivo ? "Coincide, pero no bajes la guardia" : "Cuadra: es lo que dice ser";
+    detalle="La extensión ."+ext+" coincide con el formato real ("+firma.nombre+"): no hay disfraz."+
+      (firma.id==="zip" && ["docx","xlsx","pptx","apk","jar","epub","odt","docm","xlsm","pptm"].includes(ext) ? " (Los ."+ext+" son ZIP por dentro, así que la firma ZIP es la correcta.)" : "")+
+      " Esto solo confirma el tipo de archivo, no que su contenido sea inofensivo.";
+  } else {
+    clase="v-mal"; icono="✕"; titulo="No cuadra: el tipo real es otro"; resDice="res-mal"; resEs="res-mal";
+    detalle="El archivo se llama «."+ext+"» pero por dentro es un "+firma.nombre+". La extensión no corresponde al formato real. Puede ser un renombrado inocente o un intento de engaño: comprueba el origen antes de abrirlo.";
+    mostrarCareo=true;
+  }
+
+  // ---- Avisos secundarios: se suman al veredicto, no lo sustituyen ----
+  if (doble && !doble.peligrosa){
+    avisos.push(["ambar","Doble extensión",
+      "El nombre tiene dos extensiones (."+doble.senuelo+"."+doble.real+"). Windows mostraría solo «"+doble.visible+
+      "». No es una extensión ejecutable conocida, pero el patrón es el mismo que usan los atacantes: comprueba el origen."]);
+  }
+  if (EXT_MACRO.has(ext)){
+    avisos.push(["rojo","Formato con macros",
+      "Un ."+ext+" está pensado para llevar macros, que son código que se ejecuta dentro de Office. "+
+      "Si no esperabas macros, no pulses «Habilitar contenido»: es el paso que da vía libre al malware."]);
+  }
+  if (EXT_CONTENIDO_ACTIVO[ext] && clase === "v-ok"){
+    avisos.push(["ambar","Puede llevar contenido activo", EXT_CONTENIDO_ACTIVO[ext]]);
+  }
+  if (zipCifrado(bytes)){
+    avisos.push(["ambar","Comprimido protegido con contraseña",
+      "El contenido está cifrado, así que ni este verificador ni la mayoría de los antivirus pueden inspeccionarlo. "+
+      "Los atacantes usan justamente esto para colar adjuntos sin que los filtros los analicen. Si la contraseña venía en el propio correo, desconfía."]);
+  }
+
+  $("veredicto").className = "veredicto "+clase;
+  $("veredicto").innerHTML = "<div class='circulo'>"+icono+"</div><div class='txt'><strong>"+titulo+"</strong><span>"+detalle+"</span></div>";
+  $("tarjDice").className = "tarjeta "+resDice;
+  $("tarjEs").className = "tarjeta "+resEs;
+
+  // Pintar avisos
+  const contAv = $("avisos");
+  if (avisos.length){
+    contAv.innerHTML = avisos.map(function(a){
+      return "<div class='aviso-extra av-"+a[0]+"'><span class='ic'>"+(a[0]==="rojo"?"■":"▲")+
+             "</span><span><b>"+escaparHTML(a[1])+"</b><br>"+a[2]+"</span></div>";
+    }).join("");
+    contAv.style.display="block";
+  } else contAv.style.display="none";
+
+  if (mostrarCareo) pintarCareo(ext, bytes);
+  else document.getElementById("comparaFirma").style.display="none";
+
+  pintarHex(bytes, rangos);
+  $("resultado").style.display="block";
+  $("resultado").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function formatoTam(b){
+  if (b<1024) return b+" bytes";
+  if (b<1024*1024) return (b/1024).toFixed(1)+" KB";
+  return (b/1024/1024).toFixed(1)+" MB";
+}
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   LECTURA DE ARCHIVO (solo los primeros 512 bytes)
+   FileReader lee el archivo que TÚ eliges; el navegador no deja
+   acceder a nada que no entregues a mano.
+   ===================================================================== */
+function leerArchivo(file){
+  const trozo = file.slice(0, 512);        // no hace falta leer entero
+  const lector = new FileReader();
+  lector.onload = e => {
+    const bytes = new Uint8Array(e.target.result);
+    analizar(bytes, file.name, file.size);
+  };
+  lector.readAsArrayBuffer(trozo);
+}
+
+const input = document.getElementById("fileInput");
+const dz = document.getElementById("dropzone");
+dz.addEventListener("click", ()=>input.click());
+input.addEventListener("change", ()=>{ if (input.files[0]) leerArchivo(input.files[0]); });
+dz.addEventListener("dragover", e=>{ e.preventDefault(); dz.classList.add("hover"); });
+dz.addEventListener("dragleave", ()=>dz.classList.remove("hover"));
+dz.addEventListener("drop", e=>{
+  e.preventDefault(); dz.classList.remove("hover");
+  if (e.dataTransfer.files[0]) leerArchivo(e.dataTransfer.files[0]);
+});
+
+/* =====================================================================
+   EJEMPLOS sintéticos: bytes fabricados en memoria + nombre falso,
+   para ver la app funcionar sin buscar archivos.
+   ===================================================================== */
+const EJEMPLOS = {
+  "pdf-ok":   { nombre:"contrato.pdf", bytes:[0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x37,0x0A,0x25,0xE2,0xE3,0xCF,0xD3,0x0A,0x31,0x20,0x30,0x20,0x6F,0x62,0x6A] },
+  "exe-fake": { nombre:"factura.pdf", bytes:[0x4D,0x5A,0x90,0x00,0x03,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0xFF,0xFF,0x00,0x00,0xB8,0x00,0x00,0x00] },
+  "png-ok":   { nombre:"foto.png", bytes:[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,0x00,0x00,0x00,0x04] },
+  "zip-doc":  { nombre:"informe.docx", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x00,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+  // Doble extensión: lo que Windows enseñaría es "nomina.pdf"
+  "doble-ext":{ nombre:"nomina.pdf.exe", bytes:[0x4D,0x5A,0x90,0x00,0x03,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0xFF,0xFF,0x00,0x00,0xB8,0x00,0x00,0x00] },
+  // Atajo de Windows disfrazado de documento
+  "lnk-fake": { nombre:"presupuesto.pdf.lnk", bytes:[0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46] },
+  // ZIP con el bit de cifrado activado (byte 6 = 0x09, bit 0 a 1)
+  "zip-cif":  { nombre:"documentos.zip", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x09,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+  // Formato con macros, firma ZIP correcta
+  "macro-doc":{ nombre:"factura.xlsm", bytes:[0x50,0x4B,0x03,0x04,0x14,0x00,0x00,0x00,0x08,0x00,0x21,0x00,0x5B,0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74] },
+};
+document.querySelectorAll("[data-ej]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const e = EJEMPLOS[btn.dataset.ej];
+    analizar(new Uint8Array(e.bytes), e.nombre, e.bytes.length);
+  });
+});
+</script>
+</body>
+</html>

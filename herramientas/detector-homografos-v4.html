@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detector de Phishing y Homógrafos v4</title>
+<style>
+  :root{
+    --papel:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --azul:#58a6ff;
+    --rojo:#f85149; --rojo-suave:#2c1618;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --naranja:#db8033;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--papel);color:var(--tinta);font-family:Georgia,'Times New Roman',serif;min-height:100vh;padding:2rem 1rem 4rem}
+  .contenedor{max-width:840px;margin:0 auto}
+  header{border-bottom:3px double var(--verde);padding-bottom:1rem;margin-bottom:1.5rem}
+  .expediente{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--verde)}
+  h1{font-size:1.7rem;font-weight:700;margin-top:.3rem;color:#e6edf3}
+  header p{font-size:.92rem;color:var(--tenue);margin-top:.4rem;max-width:64ch}
+
+  .panel{background:var(--panel);border:1px solid var(--linea);border-radius:6px;padding:1.2rem;margin-bottom:1.2rem}
+  label{display:block;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+  textarea{width:100%;min-height:70px;resize:vertical;font-family:var(--mono);font-size:1rem;border:1px solid var(--linea);border-radius:4px;padding:.7rem;color:var(--tinta);background:#0d1117}
+  textarea:focus{outline:2px solid var(--verde);outline-offset:1px}
+  .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+  button{font-family:var(--mono);font-size:.85rem;letter-spacing:.05em;padding:.6rem 1.2rem;border-radius:4px;cursor:pointer;border:1px solid var(--linea)}
+  #btnAnalizar{background:var(--verde);color:#0d1117;border-color:var(--verde);font-weight:700}
+  #btnAnalizar:hover{background:#4fd162}
+  .btn-secundario{background:transparent;color:var(--tinta)}
+  .btn-secundario:hover{background:var(--gris-suave,#21262d);border-color:var(--verde)}
+  button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+
+  /* Marcas personalizadas */
+  .marcas-fila{display:flex;gap:.6rem;margin-top:.4rem}
+  .marcas-fila input{flex:1;font-family:var(--mono);font-size:.9rem;border:1px solid var(--linea);border-radius:4px;padding:.5rem .7rem;background:#0d1117;color:var(--tinta)}
+  .marcas-fila input:focus{outline:2px solid var(--verde)}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+  .chip{font-family:var(--mono);font-size:.78rem;background:var(--violeta-suave);border:1px solid var(--violeta);color:var(--violeta);border-radius:12px;padding:.2rem .3rem .2rem .7rem;display:flex;align-items:center;gap:.3rem}
+  .chip button{border:none;background:none;color:var(--violeta);font-size:.9rem;padding:0 .3rem;cursor:pointer}
+  .nota-mini{font-size:.75rem;color:var(--tenue);font-family:var(--mono);margin-top:.5rem}
+
+  #medidor{display:none}
+  .score-fila{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
+  .score-num{font-family:var(--mono);font-size:3rem;font-weight:700;line-height:1}
+  .score-nivel{font-family:var(--mono);font-size:.95rem;letter-spacing:.1em;text-transform:uppercase}
+  .barra-fondo{height:14px;background:#21262d;border-radius:7px;margin-top:.8rem;overflow:hidden;border:1px solid var(--linea)}
+  .barra-relleno{height:100%;width:0;border-radius:7px;transition:width .5s ease}
+  @media (prefers-reduced-motion: reduce){ .barra-relleno{transition:none} }
+  .n-limpio{color:var(--verde)} .f-limpio{background:var(--verde)}
+  .n-bajo{color:var(--verde)} .f-bajo{background:var(--verde)}
+  .n-medio{color:var(--ambar)} .f-medio{background:var(--ambar)}
+  .n-alto{color:var(--naranja)} .f-alto{background:var(--naranja)}
+  .n-critico{color:var(--rojo)} .f-critico{background:var(--rojo)}
+
+  .veredicto{display:none;border-radius:6px;padding:1rem 1.2rem;margin-bottom:1.2rem;border:1px solid;font-family:var(--mono)}
+  .veredicto.peligro{display:block;background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+  .veredicto.limpio{display:block;background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+  .veredicto.aviso{display:block;background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+  .veredicto strong{font-size:1.05rem;display:block;margin-bottom:.3rem}
+  .veredicto span{font-size:.85rem;display:block}
+  .veredicto ul{font-size:.85rem;margin:.4rem 0 0 1.2rem}
+
+  #bloqueDominio{display:none}
+  .dominio-linea{font-family:var(--mono);font-size:1.05rem;word-break:break-all;padding:.6rem .8rem;background:#0d1117;border:1px dashed var(--linea);border-radius:4px;color:#e6edf3}
+  .dominio-linea .sub{color:var(--tenue)}
+  .dominio-linea .efectivo{color:var(--rojo);font-weight:700;text-decoration:underline}
+  .dato{font-family:var(--mono);font-size:.8rem;color:var(--tenue);margin-top:.5rem;word-break:break-all}
+  .dato b{color:#e6edf3}
+  .barra-navegador{margin-top:.7rem;border:1px solid var(--linea);border-radius:20px;background:#010409;padding:.45rem .9rem;font-family:var(--mono);font-size:.88rem;word-break:break-all;color:var(--verde)}
+  .leccion-candado{font-size:.78rem;color:var(--tenue);font-family:var(--mono);margin-top:.5rem;border-left:3px solid var(--ambar);padding-left:.6rem}
+
+  .rejilla{display:flex;flex-wrap:wrap;gap:6px;margin-top:.9rem}
+  .celda{min-width:52px;padding:.45rem .35rem;text-align:center;border:1px solid var(--linea);border-radius:4px;background:#0d1117;font-family:var(--mono)}
+  .celda .car{font-size:1.3rem;display:block;line-height:1.2;min-height:1.3em;color:#e6edf3}
+  .celda .cp{font-size:.6rem;color:var(--tenue);display:block;margin-top:.15rem}
+  .celda .scr{font-size:.6rem;display:block;letter-spacing:.05em}
+  .celda.mala{background:var(--rojo-suave);border-color:var(--rojo)}
+  .celda.mala .car,.celda.mala .scr{color:var(--rojo);font-weight:700}
+  .celda.invisible{background:var(--violeta-suave);border-color:var(--violeta)}
+  .celda.invisible .car,.celda.invisible .scr{color:var(--violeta);font-weight:700}
+  .celda.idn{background:var(--ambar-suave);border-color:var(--ambar)}
+  .celda.idn .car,.celda.idn .scr{color:var(--ambar)}
+  .celda.sep{opacity:.55}
+
+  #bloqueSenales{display:none}
+  .senal{display:flex;gap:.8rem;align-items:flex-start;border-left:4px solid var(--rojo);background:var(--rojo-suave);padding:.7rem .9rem;border-radius:0 4px 4px 0;margin-top:.7rem;font-size:.92rem}
+  .senal.s-media{border-color:var(--ambar);background:var(--ambar-suave)}
+  .senal.s-invisible{border-color:var(--violeta);background:var(--violeta-suave)}
+  .senal .puntos{font-family:var(--mono);font-weight:700;flex-shrink:0;min-width:3.2rem;text-align:right}
+  .senal code{font-family:var(--mono);background:#010409;padding:.05rem .35rem;border-radius:3px;border:1px solid var(--linea);color:var(--verde)}
+
+  #avisoCopiado{display:none;font-family:var(--mono);font-size:.78rem;color:var(--verde);margin-top:.5rem}
+  footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);font-family:var(--mono);text-align:center}
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <header>
+    <div class="expediente">Unicode · IDN · Typosquatting · Combosquatting · Open Redirect · v4</div>
+    <h1>Detector de Phishing y Homógrafos</h1>
+    <p>Analiza dominio, subdominios, ruta y parámetros: homóglifos, caracteres invisibles, suplantación por esqueleto, erratas Damerau-Levenshtein con detección de tecla vecina, marcas con texto añadido, marcas en subdominios, redirecciones abiertas, acortadores, TLD de riesgo y trucos de estructura.</p>
+  </header>
+
+  <section class="panel">
+    <label for="entrada">URL a analizar</label>
+    <textarea id="entrada" spellcheck="false" placeholder="Ejemplos: google.com/url?q=http://evil.ru · payapl.com · bit.ly/x7K2m"></textarea>
+    <div class="botones">
+      <button id="btnAnalizar">Analizar URL</button>
+      <button id="btnLimpiar" class="btn-secundario">Limpiar</button>
+      <button id="btnCopiar" class="btn-secundario" style="display:none">Copiar informe</button>
+    </div>
+    <div id="avisoCopiado">Informe copiado al portapapeles.</div>
+  </section>
+
+  <section class="panel">
+    <label for="marcaNueva">Marcas propias a vigilar (tu empresa, tu banco, tu universidad…)</label>
+    <div class="marcas-fila">
+      <input id="marcaNueva" type="text" placeholder="ej: miempresa" autocomplete="off">
+      <button id="btnMarca" class="btn-secundario">Añadir</button>
+    </div>
+    <div id="chips" class="chips"></div>
+    <div class="nota-mini">Se vigilan junto a las ~70 marcas incorporadas. La lista dura mientras la página esté abierta; se vacía al recargar.</div>
+  </section>
+
+  <section id="medidor" class="panel">
+    <label>Puntuación de riesgo</label>
+    <div class="score-fila">
+      <div id="scoreNum" class="score-num">0</div>
+      <div id="scoreNivel" class="score-nivel"></div>
+    </div>
+    <div class="barra-fondo"><div id="scoreBarra" class="barra-relleno"></div></div>
+  </section>
+
+  <div id="veredicto" class="veredicto" role="alert"></div>
+
+  <section id="bloqueDominio" class="panel">
+    <label>Dominio analizado · el dominio real está subrayado</label>
+    <div id="dominio" class="dominio-linea"></div>
+    <div id="explicaEfectivo" class="dato"></div>
+    <div id="punycode" class="dato"></div>
+    <label style="margin-top:1rem">Así lo mostraría la barra de tu navegador</label>
+    <div class="barra-navegador"><span id="vistaNavegador"></span></div>
+    <div id="notaNavegador" class="dato"></div>
+    <div class="leccion-candado">Recuerda: el candado 🔒 del navegador solo certifica que la conexión va cifrada (HTTPS), NO que el sitio sea legítimo. La mayoría del phishing actual usa HTTPS válido.</div>
+    <div id="rejilla" class="rejilla"></div>
+  </section>
+
+  <section id="bloqueSenales" class="panel">
+    <label>Señales detectadas y puntos que aporta cada una</label>
+    <div id="senales"></div>
+  </section>
+
+  <footer>Herramienta educativa · El análisis ocurre solo en tu navegador, no se envía nada a internet.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   1. CONFUSABLES UNICODE
+   ===================================================================== */
+const CONFUSABLES = {
+  "а":"a","е":"e","о":"o","р":"p","с":"c","у":"y","х":"x","і":"i","ѕ":"s",
+  "ј":"j","һ":"h","ԁ":"d","ԛ":"q","ԝ":"w","ь":"b","г":"r","п":"n","м":"m",
+  "т":"t","к":"k","в":"b","н":"h","л":"n","и":"u","ё":"e","й":"n","ц":"u",
+  "ѡ":"w","ѵ":"v","ҫ":"c","ә":"e","ғ":"f","ұ":"y","ө":"o",
+  "А":"A","В":"B","Е":"E","К":"K","М":"M","Н":"H","О":"O","Р":"P","С":"C",
+  "Т":"T","Х":"X","У":"Y","Ѕ":"S","І":"I","Ј":"J","Ԛ":"Q","Ԝ":"W","Ғ":"F",
+  "Ѵ":"V","Ҫ":"C","Ө":"O","Л":"N","П":"N",
+  "α":"a","ο":"o","ν":"v","ι":"i","κ":"k","ρ":"p","τ":"t","υ":"u","χ":"x",
+  "γ":"y","η":"n","μ":"u","ω":"w","σ":"o","ϲ":"c","ϳ":"j","ϖ":"w","ϱ":"p",
+  "Α":"A","Β":"B","Ε":"E","Ζ":"Z","Η":"H","Ι":"I","Κ":"K","Μ":"M","Ν":"N",
+  "Ο":"O","Ρ":"P","Τ":"T","Υ":"Y","Χ":"X","Ϲ":"C",
+  "օ":"o","ս":"u","ո":"n","ց":"g","զ":"q","լ":"l","ի":"h","հ":"h","ք":"p",
+  "ա":"w","Տ":"S","Լ":"L","Օ":"O",
+  "ס":"o","ו":"i","ן":"l",
+  "Ꭺ":"A","Ᏼ":"B","Ꮯ":"C","Ꭰ":"D","Ꭼ":"E","Ꮐ":"G","Ꮋ":"H","Ꮖ":"I",
+  "Ꭻ":"J","Ꮶ":"K","Ꮮ":"L","Ꮇ":"M","Ꮑ":"N","Ꮲ":"P","Ꭱ":"R","Ꮪ":"S",
+  "Ꭲ":"T","Ꮩ":"V","Ꮃ":"W","Ꮓ":"Z","Ꮟ":"b","Ꮷ":"d","Ꮒ":"h","Ꮅ":"J",
+  "ⅰ":"i","ⅱ":"ii","ⅲ":"iii","ⅴ":"v","ⅹ":"x","ⅼ":"l","ⅽ":"c","ⅾ":"d","ⅿ":"m",
+  "Ⅰ":"I","Ⅴ":"V","Ⅹ":"X","Ⅼ":"L","Ⅽ":"C","Ⅾ":"D","Ⅿ":"M",
+  "ℓ":"l","℮":"e","ℊ":"g","ℯ":"e","ℴ":"o","ℹ":"i","ⅆ":"d","ⅇ":"e",
+  "ı":"i","ȷ":"j","ł":"l","ơ":"o","ɡ":"g","ǝ":"e","ɑ":"a","ⱅ":"t","ꞅ":"s"
+};
+function mapearFullwidth(ch){
+  const cp = ch.codePointAt(0);
+  if (cp >= 0xFF01 && cp <= 0xFF5E) return String.fromCodePoint(cp - 0xFEE0);
+  return null;
+}
+function buscarConfusable(ch){
+  if (Object.prototype.hasOwnProperty.call(CONFUSABLES, ch)) return CONFUSABLES[ch];
+  const fw = mapearFullwidth(ch);
+  if (fw && /[a-zA-Z0-9]/.test(fw)) return fw;
+  return null;
+}
+
+/* =====================================================================
+   2. CARACTERES INVISIBLES
+   ===================================================================== */
+const INVISIBLES = {
+  0x200B:"Espacio de ancho cero (ZWSP)",0x200C:"Antiunión de ancho cero (ZWNJ)",
+  0x200D:"Unión de ancho cero (ZWJ)",0x200E:"Marca izquierda-a-derecha (LRM)",
+  0x200F:"Marca derecha-a-izquierda (RLM)",0x202A:"Incrustación LTR (LRE)",
+  0x202B:"Incrustación RTL (RLE)",0x202C:"Fin de formato direccional (PDF)",
+  0x202D:"Forzado LTR (LRO)",0x202E:"Forzado derecha-a-izquierda (RLO) — invierte el texto visualmente",
+  0x2060:"Unión de palabras (WJ)",0x2061:"Aplicación de función (invisible)",
+  0x2062:"Multiplicación invisible",0x2063:"Separador invisible",0x2064:"Suma invisible",
+  0xFEFF:"BOM / espacio sin ruptura de ancho cero",0x00AD:"Guion suave",
+  0x034F:"Unificador de grafemas",0x061C:"Marca de letra árabe (ALM)",
+  0x180E:"Separador de vocales mongol"
+};
+function esInvisible(ch){ return Object.prototype.hasOwnProperty.call(INVISIBLES, ch.codePointAt(0)); }
+
+/* =====================================================================
+   3. MARCAS (fijas + del usuario), GANCHOS, ESQUELETO
+   ===================================================================== */
+const SECUENCIAS_ASCII = [["rn","m"],["vv","w"],["cl","d"],["cj","g"],["nn","m"],["ii","u"]];
+const UNITARIAS_ASCII = {"0":"o","1":"l","3":"e","5":"s","8":"b","9":"g","|":"l"};
+
+const MARCAS_BASE = [
+  "google","gmail","youtube","facebook","instagram","whatsapp","twitter",
+  "apple","icloud","itunes","amazon","microsoft","outlook","office","hotmail",
+  "windows","live","netflix","paypal","ebay","linkedin","dropbox","adobe",
+  "steam","spotify","telegram","tiktok","github","yahoo","binance","coinbase",
+  "wallapop","aliexpress","booking","airbnb","uber","visa","mastercard",
+  "santander","bbva","caixabank","lacaixa","sabadell","bankinter","unicaja",
+  "openbank","abanca","kutxabank","evobanco","imaginbank","bizum",
+  "correos","seur","dhl","mrw","gls","fedex","ups",
+  "movistar","vodafone","orange","yoigo","masmovil","digi",
+  "endesa","iberdrola","naturgy","repsol",
+  "agenciatributaria","seguridadsocial","dgt","sepe","hacienda"
+];
+/* Marcas añadidas por el usuario: viven solo en memoria (variable JS).
+   No usamos almacenamiento del navegador para mantener la app 100%
+   autocontenida y sin estado persistente. */
+let MARCAS_USUARIO = [];
+function todasLasMarcas(){ return MARCAS_BASE.concat(MARCAS_USUARIO); }
+
+const GANCHOS = [
+  "seguro","seguridad","acceso","cliente","clientes","verificar","verifica",
+  "verificacion","cuenta","cuentas","login","entrar","soporte","ayuda",
+  "envio","envios","paquete","pedido","pago","pagos","factura","facturas",
+  "actualizar","actualiza","alerta","aviso","banca","online","oficial",
+  "premio","regalo","urgente","confirmar","bloqueo","desbloqueo","reembolso",
+  "secure","security","account","verify","verification","support","update",
+  "service","services","help","billing","signin","confirm","alert","official",
+  "app","web","info","net"
+];
+
+/* Acortadores de URL conocidos: destino oculto en su servidor */
+const ACORTADORES = new Set([
+  "bit.ly","tinyurl.com","t.co","goo.gl","is.gd","cutt.ly","rebrand.ly",
+  "ow.ly","buff.ly","s.id","shorturl.at","rb.gy","tiny.cc","lnkd.in",
+  "t.ly","v.gd","qr.ae","acortar.link","n9.cl","short.io","bl.ink"
+]);
+
+function esqueleto(label){
+  let s = Array.from(label).map(ch=>{
+    if (esInvisible(ch)) return "";
+    const conf = buscarConfusable(ch);
+    return conf !== null ? conf : ch;
+  }).join("").toLowerCase();
+  for (const [seq, rep] of SECUENCIAS_ASCII) s = s.split(seq).join(rep);
+  s = Array.from(s).map(c => UNITARIAS_ASCII[c] || c).join("");
+  return s;
+}
+
+/* =====================================================================
+   4. DAMERAU-LEVENSHTEIN + TECLADO QWERTY
+   Igual que Levenshtein, pero el intercambio de dos letras contiguas
+   (payapl -> paypal) cuenta como UNA operación, que es como lo comete
+   un humano. Además, si la única diferencia es una sustitución,
+   comprobamos si las dos teclas son vecinas en el teclado.
+   ===================================================================== */
+function damerau(a, b){
+  const m=a.length, n=b.length;
+  if (Math.abs(m-n) > 2) return 99;
+  // aquí sí necesitamos la matriz completa, porque la transposición
+  // mira dos filas hacia atrás
+  const d = Array.from({length:m+1}, (_,i)=>Array.from({length:n+1},(_,j)=> i===0?j : j===0?i : 0));
+  for (let i=1;i<=m;i++){
+    for (let j=1;j<=n;j++){
+      const coste = a[i-1]===b[j-1] ? 0 : 1;
+      d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+coste);
+      if (i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1]){
+        d[i][j] = Math.min(d[i][j], d[i-2][j-2]+1);   // transposición
+      }
+    }
+  }
+  return d[m][n];
+}
+
+/* Vecindad de teclas en QWERTY español (suficiente con letras) */
+const QWERTY = {
+  q:"wa", w:"qeas", e:"wrsd", r:"etdf", t:"ryfg", y:"tugh", u:"yihj",
+  i:"uojk", o:"ipkl", p:"ol",
+  a:"qwsz", s:"awedxz", d:"serfcx", f:"drtgvc", g:"ftyhbv", h:"gyujnb",
+  j:"huikmn", k:"jiolm", l:"kop",
+  z:"asx", x:"zsdc", c:"xdfv", v:"cfgb", b:"vghn", n:"bhjm", m:"njk"
+};
+function teclasVecinas(c1, c2){
+  return QWERTY[c1] ? QWERTY[c1].includes(c2) : false;
+}
+/* Si a y b difieren en una sola sustitución, devuelve el par de letras */
+function unicaSustitucion(a, b){
+  if (a.length !== b.length) return null;
+  let par = null;
+  for (let i=0;i<a.length;i++){
+    if (a[i]!==b[i]){
+      if (par) return null;      // más de una diferencia
+      par = [a[i], b[i]];
+    }
+  }
+  return par;
+}
+
+/* =====================================================================
+   5. TLDs Y SUFIJOS
+   ===================================================================== */
+const SUFIJOS_DOBLES = new Set([
+  "co.uk","org.uk","gov.uk","ac.uk","me.uk",
+  "com.au","net.au","org.au","com.br","com.mx","com.ar","com.co","com.pe",
+  "com.cl","com.ve","com.ec","co.jp","co.in","co.nz","co.za","com.cn",
+  "com.tr","com.ru","gob.es","gob.mx","gob.ar","edu.es"
+]);
+const TLD_RIESGO = new Set([
+  "tk","ml","ga","cf","gq","xyz","top","click","link","icu","cam","rest",
+  "stream","download","racing","loan","work","men","bid","country","gdn",
+  "kim","cricket","science","party","date","faith","review","accountant","quest"
+]);
+const TLD_EXTENSION = new Set(["zip","mov"]);
+
+function partirDominio(host){
+  const et = host.split(".");
+  if (et.length < 2) return {subdominios:[], efectivo:host, principal:host, tld:""};
+  const ultimas2 = et.slice(-2).join(".");
+  let nEfectivo = SUFIJOS_DOBLES.has(ultimas2.toLowerCase()) ? 3 : 2;
+  if (et.length < nEfectivo) nEfectivo = et.length;
+  return {
+    subdominios: et.slice(0, et.length - nEfectivo),
+    efectivo: et.slice(-nEfectivo).join("."),
+    principal: et[et.length - nEfectivo],
+    tld: et.slice(et.length - nEfectivo + 1).join(".")
+  };
+}
+
+/* =====================================================================
+   6. DETECTOR DE ALFABETO
+   ===================================================================== */
+const SCRIPTS = [
+  ["Latino",/\p{Script=Latin}/u],["Cirílico",/\p{Script=Cyrillic}/u],
+  ["Griego",/\p{Script=Greek}/u],["Armenio",/\p{Script=Armenian}/u],
+  ["Hebreo",/\p{Script=Hebrew}/u],["Árabe",/\p{Script=Arabic}/u],
+  ["Han",/\p{Script=Han}/u],["Cherokee",/\p{Script=Cherokee}/u]
+];
+function detectarScript(ch){
+  if (esInvisible(ch)) return "Invisible";
+  if (/[0-9\-\.\u005F]/.test(ch)) return "Común";
+  for (const [nombre, re] of SCRIPTS){ if (re.test(ch)) return nombre; }
+  return "Otro";
+}
+/* Alfabetos usados en UNA etiqueta (excluye dígitos/guiones) */
+function scriptsDeEtiqueta(label){
+  const set = new Set();
+  for (const ch of label){
+    const s = detectarScript(ch);
+    if (s!=="Común" && s!=="Invisible") set.add(s);
+  }
+  return set;
+}
+
+/* =====================================================================
+   7. PUNYCODE (RFC 3492)
+   ===================================================================== */
+const PC = {base:36,tmin:1,tmax:26,skew:38,damp:700,initialBias:72,initialN:128};
+function pcAdapt(delta,numPoints,first){
+  delta = first ? Math.floor(delta/PC.damp) : delta>>1;
+  delta += Math.floor(delta/numPoints);
+  let k=0;
+  while (delta > ((PC.base-PC.tmin)*PC.tmax)>>1){ delta=Math.floor(delta/(PC.base-PC.tmin)); k+=PC.base; }
+  return k + Math.floor(((PC.base-PC.tmin+1)*delta)/(delta+PC.skew));
+}
+function decodePunycode(input){
+  let output=[], n=PC.initialN, i=0, bias=PC.initialBias;
+  let basic = input.lastIndexOf("-"); if (basic<0) basic=0;
+  for (let j=0;j<basic;j++) output.push(input.charCodeAt(j));
+  let idx = basic>0 ? basic+1 : 0;
+  while (idx < input.length){
+    const oldi=i; let w=1;
+    for (let k=PC.base;;k+=PC.base){
+      if (idx>=input.length) throw new Error("punycode inválido");
+      const c=input.charCodeAt(idx++);
+      const digit = c-48<10 ? c-22 : c-65<26 ? c-65 : c-97<26 ? c-97 : PC.base;
+      if (digit>=PC.base) throw new Error("punycode inválido");
+      i += digit*w;
+      const t = k<=bias ? PC.tmin : (k>=bias+PC.tmax ? PC.tmax : k-bias);
+      if (digit<t) break;
+      w *= PC.base-t;
+    }
+    bias = pcAdapt(i-oldi, output.length+1, oldi===0);
+    n += Math.floor(i/(output.length+1));
+    i %= output.length+1;
+    output.splice(i++,0,n);
+  }
+  return String.fromCodePoint(...output);
+}
+function encodePunycode(input){
+  const cps = Array.from(input).map(c=>c.codePointAt(0));
+  let output = cps.filter(cp=>cp<128).map(cp=>String.fromCharCode(cp)).join("");
+  const basicLength = output.length;
+  let handled = basicLength;
+  if (basicLength) output += "-";
+  let n=PC.initialN, delta=0, bias=PC.initialBias;
+  while (handled < cps.length){
+    let m=Infinity;
+    for (const cp of cps) if (cp>=n && cp<m) m=cp;
+    delta += (m-n)*(handled+1); n=m;
+    for (const cp of cps){
+      if (cp<n) delta++;
+      if (cp===n){
+        let q=delta;
+        for (let k=PC.base;;k+=PC.base){
+          const t = k<=bias ? PC.tmin : (k>=bias+PC.tmax ? PC.tmax : k-bias);
+          if (q<t) break;
+          const d = t + (q-t)%(PC.base-t);
+          output += String.fromCharCode(d + 22 + 75*(d<26));
+          q = Math.floor((q-t)/(PC.base-t));
+        }
+        output += String.fromCharCode(q + 22 + 75*(q<26));
+        bias = pcAdapt(delta, handled+1, handled===basicLength);
+        delta=0; handled++;
+      }
+    }
+    delta++; n++;
+  }
+  return output;
+}
+function dominioAUnicode(host){
+  return host.split(".").map(l=>{
+    if (l.toLowerCase().startsWith("xn--")){
+      try { return decodePunycode(l.slice(4).toLowerCase()); } catch(e){ return l; }
+    }
+    return l;
+  }).join(".");
+}
+function dominioAPunycode(host){
+  return host.split(".").map(l=>{
+    if (Array.from(l).some(c=>c.codePointAt(0)>127)){
+      try { return "xn--"+encodePunycode(l.toLowerCase()); } catch(e){ return l; }
+    }
+    return l;
+  }).join(".");
+}
+
+/* =====================================================================
+   8. ANÁLISIS PRINCIPAL
+   ===================================================================== */
+let ultimoInforme = "";
+
+function analizar(){
+  const entradaRaw = document.getElementById("entrada").value;
+  const $ = id => document.getElementById(id);
+  const senalesDiv=$("senales"), rejilla=$("rejilla");
+  senalesDiv.innerHTML=""; rejilla.innerHTML="";
+  $("avisoCopiado").style.display="none";
+
+  let t = entradaRaw.trim();
+  if (!t){ mostrarError("No has pegado nada."); return; }
+  if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(t)) t = "http://" + t;
+  let url;
+  try { url = new URL(t); } catch(e){ mostrarError("No se pudo interpretar la URL. Revisa el formato."); return; }
+
+  /* Esquemas directamente peligrosos */
+  if (url.protocol==="javascript:" || url.protocol==="data:"){
+    mostrarError("Esquema <b>"+url.protocol+"</b>: ejecuta código o incrusta contenido directamente. Nunca abras enlaces así.");
+    return;
+  }
+
+  const hostRaw = url.hostname;
+  const teniaPunycode = /(^|\.)xn--/i.test(hostRaw);
+  const host = dominioAUnicode(hostRaw);
+  const partes = partirDominio(host);
+  const MARCAS = todasLasMarcas();
+
+  const senales = [];
+  function senal(puntos, html, clase){ senales.push({puntos, html, clase: clase||""}); }
+
+  /* ---- ¿Es un acortador? Se detecta antes que nada ---- */
+  const esAcortador = ACORTADORES.has(partes.efectivo.toLowerCase());
+
+  /* ---- A. Homógrafos, con la corrección de alfabeto coherente ----
+     Regla nueva: dentro de cada etiqueta,
+     - etiqueta con alfabetos MEZCLADOS -> cada confusable es ataque.
+     - etiqueta 100% en un alfabeto no latino -> solo es ataque si su
+       esqueleto coincide con una marca; si no, es un IDN legítimo.   */
+  const etiquetas = host.split(".");
+  const infoEtiquetas = etiquetas.map(l=>{
+    const scr = scriptsDeEtiqueta(l);
+    const esq = esqueleto(l);
+    const marcaImitada = MARCAS.find(m => esq === m && l.toLowerCase() !== m) || null;
+    return {label:l, scripts:scr, mezclada: scr.size>1, puraNoLatina: scr.size===1 && !scr.has("Latino"), marcaImitada};
+  });
+
+  const scriptsGlobales = new Set();
+  infoEtiquetas.forEach(i=>i.scripts.forEach(s=>scriptsGlobales.add(s)));
+  let hayNoAscii=false, nConfusables=0, nInvisibles=0, idnCoherente=false;
+  let posGlobal = 0;
+
+  infoEtiquetas.forEach((info, iEt)=>{
+    const peligrosaPorMarca = info.puraNoLatina && info.marcaImitada;
+    if (info.puraNoLatina && !info.marcaImitada) idnCoherente = true;
+
+    Array.from(info.label).forEach(ch=>{
+      const cpNum = ch.codePointAt(0);
+      const cp = "U+"+cpNum.toString(16).toUpperCase().padStart(4,"0");
+      const script = detectarScript(ch);
+      const invisible = esInvisible(ch);
+      const conf = buscarConfusable(ch);
+      const noAscii = cpNum>127;
+      if (noAscii) hayNoAscii=true;
+
+      let tipo=null;
+      if (invisible){
+        tipo="invisible"; nInvisibles++;
+        senal(50,"Posición "+(posGlobal+1)+": carácter INVISIBLE "+cp+" — "+INVISIBLES[cpNum]+".","s-invisible");
+      } else if (noAscii && (info.mezclada || peligrosaPorMarca)){
+        // Solo es ataque si hay mezcla o si la etiqueta entera imita una marca
+        if (conf!==null){
+          tipo="mala"; nConfusables++;
+          senal(40,"Posición "+(posGlobal+1)+": <code>"+escaparHTML(ch)+"</code> ("+cp+", "+script+") — imita a <code>"+conf+"</code>"+(info.mezclada?" en una etiqueta con alfabetos mezclados":"")+".");
+        } else if (script!=="Latino"){
+          tipo="mala"; nConfusables++;
+          senal(30,"Posición "+(posGlobal+1)+": <code>"+escaparHTML(ch)+"</code> ("+cp+", "+script+") — carácter no latino infiltrado entre latinos.");
+        }
+      } else if (noAscii && info.puraNoLatina){
+        tipo="idn";  // se pinta en ámbar, sin puntos: IDN coherente
+      }
+
+      const celda=document.createElement("div");
+      celda.className="celda"+(tipo==="invisible"?" invisible":tipo==="mala"?" mala":tipo==="idn"?" idn":"")+(ch==="."?" sep":"");
+      celda.innerHTML="<span class='car'>"+(invisible?"·":escaparHTML(ch))+"</span><span class='cp'>"+cp+"</span><span class='scr'>"+script+"</span>";
+      rejilla.appendChild(celda);
+      posGlobal++;
+    });
+
+    // celda separadora del punto
+    if (iEt < infoEtiquetas.length-1){
+      const punto=document.createElement("div");
+      punto.className="celda sep";
+      punto.innerHTML="<span class='car'>.</span><span class='cp'>U+002E</span><span class='scr'>Común</span>";
+      rejilla.appendChild(punto);
+      posGlobal++;
+    }
+  });
+
+  const mezclaEnEtiqueta = infoEtiquetas.some(i=>i.mezclada);
+  if (mezclaEnEtiqueta) senal(25,"Alfabetos mezclados dentro de una misma etiqueta: "+[...scriptsGlobales].join(" + ")+".");
+
+  /* ---- B. Suplantación por esqueleto (principal) ---- */
+  const esqPrincipal = esqueleto(partes.principal);
+  let marcaSuplantada = null;
+  for (const marca of MARCAS){
+    if (esqPrincipal === marca && partes.principal.toLowerCase() !== marca){
+      marcaSuplantada = marca;
+      senal(45,"Suplantación: <code>"+escaparHTML(partes.principal)+"</code> se reduce al esqueleto <code>"+esqPrincipal+"</code> — imita a <code>"+marca+"</code>.");
+      break;
+    }
+  }
+
+  /* ---- C. Typosquatting Damerau-Levenshtein + tecla vecina ---- */
+  if (!marcaSuplantada && partes.principal.length >= 4 && !esAcortador){
+    const p = esqPrincipal;
+    let mejor = null;
+    for (const marca of MARCAS){
+      if (p === marca){ mejor=null; break; }
+      const d = damerau(p, marca);
+      if (d === 1 || (d === 2 && marca.length >= 6)){
+        if (!mejor || d < mejor.d) mejor = {marca, d};
+      }
+    }
+    if (mejor){
+      let extra = "";
+      const sust = unicaSustitucion(p, mejor.marca);
+      if (sust && teclasVecinas(sust[1], sust[0])){
+        extra = " La <code>"+sust[0]+"</code> y la <code>"+sust[1]+"</code> son teclas vecinas en QWERTY: errata de teclado deliberada.";
+      } else if (mejor.d===1 && p.length===mejor.marca.length && damerau(p,mejor.marca)===1 && levDistintoOrden(p,mejor.marca)){
+        extra = " Dos letras intercambiadas: el error de tecleo humano más común.";
+      }
+      senal(mejor.d===1 ? 40 : 25,
+        "Typosquatting: <code>"+escaparHTML(partes.principal)+"</code> está a distancia "+mejor.d+" (Damerau-Levenshtein) de <code>"+mejor.marca+"</code>."+extra);
+      marcaSuplantada = mejor.marca;
+    }
+  }
+  /* auxiliar: ¿la única diferencia es una transposición? */
+  function levDistintoOrden(a,b){
+    if (a.length!==b.length) return false;
+    const dif=[];
+    for (let i=0;i<a.length;i++) if (a[i]!==b[i]) dif.push(i);
+    return dif.length===2 && dif[1]===dif[0]+1 && a[dif[0]]===b[dif[1]] && a[dif[1]]===b[dif[0]];
+  }
+
+  /* ---- D. Combosquatting (ahora también sin guion para marcas cortas) ---- */
+  if (!marcaSuplantada && !esAcortador){
+    const pl = partes.principal.toLowerCase();
+    for (const marca of MARCAS){
+      if (pl === marca) break;
+      const idx = pl.indexOf(marca);
+      if (idx === -1) continue;
+      const antes = idx===0 ? "" : pl[idx-1];
+      const despues = idx+marca.length>=pl.length ? "" : pl[idx+marca.length];
+      const conLimites = (antes==="" || antes==="-") && (despues==="" || despues==="-");
+      const resto = pl.replace(marca,"").replace(/-/g,"");
+      // marcas cortas sin límites: solo si TODO el resto son ganchos/dígitos
+      const restoEsGancho = resto==="" ? false : soloGanchos(resto);
+      if (!conLimites && marca.length < 6 && !restoEsGancho) continue;
+      const ganchoDetectado = GANCHOS.find(g => resto.includes(g)) || null;
+      senal(ganchoDetectado ? 40 : 30,
+        "Combosquatting: contiene la marca <code>"+marca+"</code> con texto añadido"+
+        (ganchoDetectado ? " y la palabra gancho «"+ganchoDetectado+"»" : "")+
+        ". La marca real nunca registra dominios así.");
+      marcaSuplantada = marca;
+      break;
+    }
+  }
+  /* ¿la cadena se compone solo de palabras gancho y dígitos? */
+  function soloGanchos(s){
+    let resto = s;
+    let cambio = true;
+    while (cambio && resto.length){
+      cambio = false;
+      for (const g of GANCHOS){
+        if (resto.startsWith(g)){ resto = resto.slice(g.length); cambio=true; break; }
+      }
+      while (/^\d/.test(resto)){ resto = resto.slice(1); cambio=true; }
+    }
+    return resto.length===0;
+  }
+
+  /* ---- E. Marca en el subdominio ---- */
+  for (const sub of partes.subdominios){
+    const e = esqueleto(sub);
+    const marcaSub = MARCAS.find(m => e === m);
+    if (marcaSub){
+      senal(45,"Marca en el subdominio: <code>"+escaparHTML(sub)+"</code> aparenta ser <code>"+marcaSub+"</code>, pero el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>.");
+      break;
+    }
+  }
+  if (partes.subdominios.length >= 2){
+    const cadena = partes.subdominios.join(".").toLowerCase();
+    for (const marca of MARCAS){
+      if (cadena.includes(marca+".com") || cadena.includes(marca+".es")){
+        senal(45,"El texto <code>"+marca+".com</code> aparece como subdominio para engañar a la vista; el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>.");
+        break;
+      }
+    }
+  }
+
+  /* ---- F. RUTA Y PARÁMETROS (nuevo en v4) ---- */
+  let rutaYQuery = "";
+  try { rutaYQuery = decodeURIComponent(url.pathname + url.search); }
+  catch(e){ rutaYQuery = url.pathname + url.search; }   // % mal formados
+  const rutaLower = rutaYQuery.toLowerCase();
+
+  // F1. Open redirect: una URL completa escondida en los parámetros
+  const urlEmbebida = rutaYQuery.match(/https?:\/\/([^\/?&#\s]+)/i) || rutaYQuery.match(/(?:^|[=&\/])www\.([^\/?&#\s]+)/i);
+  if (urlEmbebida){
+    const destino = urlEmbebida[1].replace(/^www\./,"");
+    senal(35,"Posible open redirect: hay otra URL incrustada en los parámetros que apunta a <code>"+escaparHTML(destino)+"</code>. Aunque el dominio visible sea legítimo, el destino final puede ser ese otro. Analiza <code>"+escaparHTML(destino)+"</code> por separado.");
+  }
+
+  // F2. Marca en la ruta cuando el dominio NO es esa marca
+  if (!marcaSuplantada){
+    for (const marca of MARCAS){
+      if (partes.principal.toLowerCase()===marca) continue;
+      const re = new RegExp("(^|[\\/\\-_.])"+marca+"([\\/\\-_.]|$)","i");
+      if (re.test(rutaLower)){
+        senal(25,"La marca <code>"+marca+"</code> aparece en la ruta (<code>"+escaparHTML(url.pathname)+"</code>) pero el dominio real es <code>"+escaparHTML(partes.efectivo)+"</code>: página disfrazada.");
+        break;
+      }
+    }
+  }
+
+  // F3. Palabras gancho en la ruta (señal débil, acompaña a otras)
+  const ganchosRuta = GANCHOS.filter(g => g.length>4 && rutaLower.includes(g));
+  if (ganchosRuta.length >= 2){
+    senal(10,"La ruta acumula palabras gancho ("+ganchosRuta.slice(0,3).join(", ")+"): lenguaje típico de páginas de robo de credenciales.","s-media");
+  }
+
+  /* ---- G. TLD ---- */
+  const tldSolo = partes.tld.split(".").pop().toLowerCase();
+  if (TLD_EXTENSION.has(tldSolo)){
+    senal(20,"El TLD <code>."+tldSolo+"</code> coincide con una extensión de archivo: <code>"+escaparHTML(partes.efectivo)+"</code> parece un fichero pero es un dominio.");
+  } else if (TLD_RIESGO.has(tldSolo)){
+    senal(15,"TLD de alto abuso: <code>."+tldSolo+"</code>, dominio barato/gratuito frecuente en phishing.","s-media");
+  }
+  if (!marcaSuplantada){
+    const pl = partes.principal.toLowerCase();
+    if (MARCAS.includes(pl) && (TLD_RIESGO.has(tldSolo) || TLD_EXTENSION.has(tldSolo))){
+      senal(35,"La marca <code>"+pl+"</code> nunca opera bajo <code>."+tldSolo+"</code>: casi con seguridad es un registro fraudulento.");
+    }
+  }
+
+  /* ---- H. Estructura ---- */
+  if (url.username || url.password){
+    senal(40,"Credenciales antes de una <code>@</code>: <code>"+escaparHTML(url.username)+"</code> es decorado; el navegador va a <code>"+escaparHTML(host)+"</code>.");
+  }
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)){
+    senal(30,"El host es una IP cruda: los servicios legítimos no piden credenciales así.");
+  }
+  if (url.port && url.port!=="80" && url.port!=="443"){
+    senal(15,"Puerto no estándar <code>:"+url.port+"</code>. Los servicios web legítimos usan 80/443.","s-media");
+  }
+  const guiones = (partes.efectivo.match(/-/g)||[]).length;
+  if (guiones >= 3) senal(10,guiones+" guiones en el dominio: patrón de dominios generados para campañas.","s-media");
+  if (partes.subdominios.length >= 3) senal(10,partes.subdominios.length+" niveles de subdominio para esconder el dominio real.","s-media");
+
+  /* ---- I. Acortador ---- */
+  if (esAcortador){
+    senal(15,"Acortador de URL: <code>"+escaparHTML(partes.efectivo)+"</code> oculta el destino real en su servidor. Este análisis solo cubre el acortador, no adonde lleva.","s-media");
+  }
+
+  /* ---- Puntuación ---- */
+  let score = Math.min(100, senales.reduce((a,s)=>a+s.puntos,0));
+  let nivel, claseN;
+  if (senales.length===0){ nivel="LIMPIO"; claseN="limpio"; }
+  else if (score < 30){ nivel="RIESGO BAJO"; claseN="bajo"; }
+  else if (score < 60){ nivel="RIESGO MEDIO"; claseN="medio"; }
+  else if (score < 85){ nivel="RIESGO ALTO"; claseN="alto"; }
+  else { nivel="CRÍTICO"; claseN="critico"; }
+
+  /* ---------- Pintar ---------- */
+  $("medidor").style.display="block";
+  $("scoreNum").textContent=score; $("scoreNum").className="score-num n-"+claseN;
+  $("scoreNivel").textContent=nivel; $("scoreNivel").className="score-nivel n-"+claseN;
+  const barra=$("scoreBarra");
+  barra.className="barra-relleno f-"+claseN;
+  barra.style.width=Math.max(score, senales.length?8:3)+"%";
+
+  const pre = partes.subdominios.length ? partes.subdominios.join(".")+"." : "";
+  $("dominio").innerHTML=(pre?"<span class='sub'>"+escaparHTML(pre)+"</span>":"")+"<span class='efectivo'>"+escaparHTML(partes.efectivo)+"</span>";
+  $("explicaEfectivo").innerHTML="Dominio real (lo que controla su dueño): <b>"+escaparHTML(partes.efectivo)+"</b>"+
+    (partes.subdominios.length?" · Subdominios (texto libre del dueño): <b>"+escaparHTML(partes.subdominios.join("."))+"</b>":"");
+
+  const formaPunycode = dominioAPunycode(host);
+  $("punycode").innerHTML = teniaPunycode
+    ? "Forma punycode original pegada: <b>"+escaparHTML(hostRaw)+"</b>"
+    : (hayNoAscii ? "Forma punycode equivalente: <b>"+escaparHTML(formaPunycode)+"</b>" : "Dominio 100% ASCII, sin punycode.");
+  const navMuestraPunycode = hayNoAscii && (mezclaEnEtiqueta || nConfusables>0 || nInvisibles>0);
+  $("vistaNavegador").textContent = navMuestraPunycode ? formaPunycode : host;
+  $("notaNavegador").textContent = navMuestraPunycode
+    ? "Tu navegador mostraría la forma xn-- por mezcla de alfabetos o caracteres de riesgo: primera señal de alarma."
+    : (idnCoherente ? "Dominio internacionalizado con alfabeto coherente: el navegador lo mostraría tal cual." : "");
+  $("bloqueDominio").style.display="block";
+
+  const veredicto=$("veredicto");
+  const hayHomografo = nConfusables>0 || nInvisibles>0;
+  if (hayHomografo){
+    veredicto.className="veredicto peligro";
+    veredicto.innerHTML="<strong>¡Ataque homógrafo detectado!</strong><span>"+(nConfusables+nInvisibles)+" carácter(es) afectado(s)"+
+      (nInvisibles?" · incluye caracteres invisibles":"")+(teniaPunycode?" · venía en punycode (xn--)":"")+"</span>";
+  } else if (esAcortador && score < 60){
+    veredicto.className="veredicto aviso";
+    veredicto.innerHTML="<strong>URL acortada: destino oculto</strong>"+
+      "<span>No se puede dar por limpia sin conocer adónde redirige. Expándela primero:</span>"+
+      "<ul><li>bit.ly: añade <b>+</b> al final del enlace para ver el destino</li>"+
+      "<li>tinyurl: antepón <b>preview.</b> al dominio</li>"+
+      "<li>o usa un expansor (urlex.org) y pega aquí la URL final</li></ul>";
+  } else if (senales.length>0){
+    veredicto.className = score>=60 ? "veredicto peligro" : "veredicto aviso";
+    veredicto.innerHTML="<strong>"+(score>=60?"Dominio fraudulento con alta probabilidad":"Dominio sospechoso")+"</strong>"+
+      "<span>"+senales.length+" señal(es) de riesgo. Revisa el desglose.</span>";
+  } else if (idnCoherente){
+    veredicto.className="veredicto aviso";
+    veredicto.innerHTML="<strong>Dominio internacionalizado (IDN) coherente</strong><span>Usa un alfabeto no latino de forma consistente y no imita ninguna marca vigilada: probablemente legítimo en su región. Verifícalo si no lo esperabas.</span>";
+  } else {
+    veredicto.className="veredicto limpio";
+    veredicto.innerHTML="<strong>Sin señales de riesgo</strong><span>Ni homógrafos, ni suplantación, ni trucos de ruta o estructura. Esto no garantiza legitimidad al 100%.</span>";
+  }
+
+  if (senales.length){
+    senales.sort((a,b)=>b.puntos-a.puntos);
+    senales.forEach(s=>{
+      const div=document.createElement("div");
+      div.className="senal "+s.clase;
+      div.innerHTML="<span class='puntos'>+"+s.puntos+"</span><span>"+s.html+"</span>";
+      senalesDiv.appendChild(div);
+    });
+    $("bloqueSenales").style.display="block";
+  } else $("bloqueSenales").style.display="none";
+
+  ultimoInforme=[
+    "INFORME · Detector de Phishing y Homógrafos v4",
+    "Fecha: "+new Date().toLocaleString(),
+    "URL analizada: "+entradaRaw.trim(),
+    "Dominio (Unicode): "+host,
+    "Dominio (punycode): "+formaPunycode,
+    "Dominio real/efectivo: "+partes.efectivo,
+    "Ruta y parámetros: "+(url.pathname+url.search || "(ninguno)"),
+    "Puntuación: "+score+"/100 · Nivel: "+nivel,"",
+    ...(senales.length
+      ? ["SEÑALES:"].concat(senales.map(s=>"- [+"+s.puntos+"] "+s.html.replace(/<[^>]+>/g,"")))
+      : ["Sin señales de riesgo detectadas."])
+  ].join("\n");
+  $("btnCopiar").style.display="inline-block";
+}
+
+function mostrarError(msg){
+  const v=document.getElementById("veredicto");
+  v.className="veredicto aviso";
+  v.innerHTML="<strong>URL no válida o peligrosa</strong><span>"+msg+"</span>";
+  ["medidor","bloqueDominio","bloqueSenales"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("btnCopiar").style.display="none";
+}
+
+/* =====================================================================
+   9. MARCAS PERSONALIZADAS (solo en memoria)
+   ===================================================================== */
+function pintarChips(){
+  const chips=document.getElementById("chips");
+  chips.innerHTML="";
+  MARCAS_USUARIO.forEach((m,i)=>{
+    const c=document.createElement("span");
+    c.className="chip";
+    c.innerHTML=escaparHTML(m)+"<button aria-label='Quitar "+escaparHTML(m)+"'>×</button>";
+    c.querySelector("button").addEventListener("click",()=>{ MARCAS_USUARIO.splice(i,1); pintarChips(); });
+    chips.appendChild(c);
+  });
+}
+function anadirMarca(){
+  const inp=document.getElementById("marcaNueva");
+  const m=inp.value.trim().toLowerCase().replace(/[^a-z0-9\-]/g,"");
+  if (m.length>=3 && !MARCAS_BASE.includes(m) && !MARCAS_USUARIO.includes(m)){
+    MARCAS_USUARIO.push(m); pintarChips();
+  }
+  inp.value=""; inp.focus();
+}
+
+/* =====================================================================
+   10. COPIAR INFORME
+   ===================================================================== */
+function copiarInforme(){
+  const ok=()=>{ const a=document.getElementById("avisoCopiado"); a.style.display="block"; setTimeout(()=>a.style.display="none",2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ultimoInforme).then(ok).catch(()=>copiarFallback(ok));
+  } else copiarFallback(ok);
+}
+function copiarFallback(ok){
+  const ta=document.createElement("textarea");
+  ta.value=ultimoInforme; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); ok(); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function escaparHTML(s){
+  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   11. EVENTOS
+   ===================================================================== */
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnCopiar").addEventListener("click", copiarInforme);
+document.getElementById("btnMarca").addEventListener("click", anadirMarca);
+document.getElementById("marcaNueva").addEventListener("keydown", e=>{
+  if (e.key==="Enter"){ e.preventDefault(); anadirMarca(); }
+});
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("entrada").value="";
+  document.getElementById("veredicto").className="veredicto";
+  ["medidor","bloqueDominio","bloqueSenales"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("btnCopiar").style.display="none";
+  document.getElementById("entrada").focus();
+});
+document.getElementById("entrada").addEventListener("keydown", e=>{
+  if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); analizar(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expansor de Enlaces Acortados</title>
+<style>
+  :root{
+    --fondo:#0d1117; --tinta:#c9d1d9; --panel:#161b22; --linea:#2a313c;
+    --verde:#3fb950; --verde-suave:#12261a;
+    --ambar:#d29922; --ambar-suave:#2a2110;
+    --rojo:#f85149;  --rojo-suave:#2c1618;
+    --azul:#58a6ff;  --azul-suave:#132844;
+    --violeta:#bc8cff; --violeta-suave:#22183a;
+    --gris:#8b949e;  --gris-suave:#21262d;
+    --tenue:#8b949e;
+    --mono:'Courier New',ui-monospace,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--fondo);color:var(--tinta);font-family:var(--sans);min-height:100vh;padding:1.5rem 1rem 4rem}
+  .contenedor{max-width:880px;margin:0 auto}
+  header{text-align:center;margin-bottom:1.8rem;padding:0 .5rem}
+  h1{font-size:1.6rem;letter-spacing:-.01em;color:#e6edf3}
+  h1::before{content:"> ";color:var(--verde);font-family:var(--mono)}
+  header p{color:var(--tenue);font-size:.95rem;margin-top:.5rem;line-height:1.5;max-width:620px;margin-left:auto;margin-right:auto}
+  .paso-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--verde);color:#0d1117;font-weight:800;font-size:.9rem;margin-right:.55rem;flex-shrink:0;box-shadow:0 2px 6px rgba(63,185,80,.3)}
+  .panel{background:var(--panel);border:1px solid var(--linea);border-radius:16px;padding:1.3rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25)}
+  .panel h2{font-size:1.05rem;display:flex;align-items:center;margin-bottom:.9rem;color:#e6edf3}
+  label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem}
+  input[type=text], textarea{width:100%;font-family:var(--mono);font-size:.85rem;border:1px solid var(--linea);border-radius:10px;padding:.7rem .8rem;background:#0d1117;color:var(--tinta)}
+  textarea{min-height:150px;resize:vertical}
+  input:focus,textarea:focus{outline:2px solid var(--verde)}
+  .botones{display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap}
+  button{font-family:var(--sans);font-weight:600;font-size:.88rem;padding:.6rem 1.3rem;border-radius:10px;cursor:pointer;border:1px solid transparent}
+  .btn-pri{background:var(--verde);color:#0d1117}
+  .btn-pri:hover{background:#4fd162}
+  .btn-sec{background:var(--gris-suave);color:var(--tinta);border-color:var(--linea)}
+  .btn-sec:hover{background:#2d333b;border-color:var(--verde)}
+  button:focus-visible{outline:3px solid var(--verde);outline-offset:2px}
+
+  .comando{position:relative;background:#010409;border:1px solid var(--linea);color:#7ee787;border-radius:10px;padding:.95rem 1rem 2.6rem;font-family:var(--mono);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere;word-break:break-word;margin-top:.6rem}
+  .comando .copiar{position:absolute;bottom:.55rem;right:.55rem;background:var(--gris-suave);color:var(--tinta);border:1px solid var(--linea);font-size:.72rem;font-weight:600;padding:.35rem .8rem;border-radius:6px;transition:background .15s}
+  .comando .copiar:hover{background:#2d333b}
+  .aviso-priv{display:flex;gap:.7rem;align-items:flex-start;background:var(--ambar-suave);border:2px solid var(--ambar);color:#e3b341;border-radius:10px;padding:.75rem 1rem;font-size:.88rem;margin-top:.8rem}
+  .aviso-priv .ic{font-weight:800;flex-shrink:0}
+
+  details{margin-top:.7rem;border:1px solid var(--linea);border-radius:10px;background:#0d1117}
+  summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;font-size:.85rem;color:var(--verde)}
+  details[open] summary{border-bottom:1px solid var(--linea)}
+  details .cuerpo{padding:.7rem .9rem;font-size:.85rem;line-height:1.55;color:#adbac7}
+  details .cuerpo b{color:#e6edf3}
+  details .cuerpo code{font-family:var(--mono);background:#010409;border:1px solid var(--linea);border-radius:4px;padding:.05rem .35rem;font-size:.8rem;color:var(--verde)}
+
+  /* Cadena de saltos */
+  #resultado{display:none}
+  .salto{border:2px solid var(--linea);border-radius:12px;padding:.95rem 1rem;background:#0d1117;position:relative}
+  .salto.acortador{border-color:var(--violeta);background:var(--violeta-suave)}
+  .salto.final-ok{border-color:var(--verde);background:var(--verde-suave)}
+  .salto.final-mal{border-color:var(--rojo);background:var(--rojo-suave)}
+  .salto .cab{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+  .badge{font-size:.7rem;font-weight:800;letter-spacing:.04em;padding:.25rem .6rem;border-radius:99px;color:#0d1117;white-space:nowrap}
+  .bg-verde{background:var(--verde)} .bg-ambar{background:var(--ambar)} .bg-rojo{background:var(--rojo)}
+  .bg-azul{background:var(--azul)} .bg-violeta{background:var(--violeta)} .bg-gris{background:var(--gris)}
+  .salto .url{font-family:var(--mono);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere;word-break:break-word;margin-top:.5rem;background:rgba(255,255,255,.04);border:1px solid var(--linea);border-radius:7px;padding:.4rem .55rem;color:#e6edf3}
+  .salto .nota{font-size:.78rem;color:var(--tenue);margin-top:.35rem}
+  .flecha{text-align:center;color:var(--gris);font-size:1.1rem;padding:.4rem 0;display:flex;align-items:center;justify-content:center;gap:.4rem}
+  .flecha span{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+
+  .bandera{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.8rem 1rem;margin-top:.6rem;font-size:.9rem;line-height:1.5;border:2px solid}
+  .bandera .icono{flex-shrink:0;font-weight:800;font-size:1rem;line-height:1.4}
+  .bandera .texto{min-width:0;flex:1}
+  .b-rojo{background:var(--rojo-suave);border-color:var(--rojo);color:#ffa198}
+  .b-ambar{background:var(--ambar-suave);border-color:var(--ambar);color:#e3b341}
+  .b-verde{background:var(--verde-suave);border-color:var(--verde);color:#7ee787}
+  .b-azul{background:var(--azul-suave);border-color:var(--azul);color:#a5d6ff}
+  .bandera code{font-family:var(--mono);background:rgba(1,4,9,.7);padding:.05rem .35rem;border-radius:4px;border:1px solid var(--linea);font-size:.82rem;overflow-wrap:anywhere;word-break:break-word}
+  .bandera .url-destino{display:block;font-family:var(--mono);font-size:.82rem;background:#010409;border:1px solid var(--linea);border-radius:7px;padding:.45rem .6rem;margin:.4rem 0;overflow-wrap:anywhere;word-break:break-word;line-height:1.5;color:var(--verde)}
+
+  footer{margin-top:2rem;font-size:.78rem;color:var(--tenue);text-align:center}
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <header>
+    <h1>Expansor de Enlaces Acortados</h1>
+    <p>Descubre a dónde lleva de verdad un enlace corto <b>antes de abrirlo en tu navegador</b>: la red la pone <code>curl</code>, el análisis lo pone esta app — en local.</p>
+  </header>
+
+  <!-- PASO 1: generar el comando -->
+  <section class="panel">
+    <h2><span class="paso-num">1</span> Genera tu comando</h2>
+    <label for="urlCorta">Enlace acortado (no lo abras, solo cópialo aquí)</label>
+    <input type="text" id="urlCorta" placeholder="https://bit.ly/xxxxx" spellcheck="false" autocomplete="off">
+    <div id="cajaComando" style="display:none">
+      <div class="comando"><span id="txtComando"></span><button class="copiar" id="btnCopiarCmd">Copiar</button></div>
+      <div class="aviso-priv"><span class="ic">⚠</span><span><b>Antes de ejecutarlo, entiende qué implica:</b> este comando CONTACTA con los servidores de la cadena. El acortador —y el destino final— verán tu IP y sabrán que alguien comprobó el enlace. Con <code>-I</code> solo pedimos cabeceras (no descargamos la página), pero el contacto existe. Si el enlace te llegó en un ataque dirigido a ti personalmente, no lo expandas desde tu red: usa un servicio intermedio como <code>urlscan.io</code> (que lo visita él por ti, a cambio de que el enlace quede en su base pública).</span></div>
+    </div>
+    <details>
+      <summary>¿Qué hace cada parte del comando?</summary>
+      <div class="cuerpo">
+        <code>curl</code> — herramienta de línea de comandos para hacer peticiones web. Viene incluida en Windows 10/11, macOS y Linux; en Android se instala con la app <b>Termux</b> (<code>pkg install curl</code>).<br><br>
+        <code>-s</code> — <i>silent</i>: oculta la barra de progreso para que la salida quede limpia.<br>
+        <code>-I</code> — pide solo las <b>cabeceras</b> (petición HEAD), no el contenido. Menos ruido y menos exposición.<br>
+        <code>-L</code> — <i>location</i>: sigue las redirecciones automáticamente, saltando de una a la siguiente.<br>
+        <code>--max-redirs 10</code> — límite de saltos, para que un bucle malicioso de redirecciones infinitas no te deje colgado.<br>
+        <code>-A "Mozilla/5.0..."</code> — <i>agent</i>: le dice a curl que se presente ante el servidor como si fuera un navegador Firefox, en vez de anunciarse como "curl". Muchos servidores protegidos (Cloudflare y similares) rechazan las peticiones que dicen venir de curl con un <code>403 Prohibido</code> aunque el enlace funcione perfectamente en un navegador. Este disfraz evita esos falsos rechazos. No es infalible —algunas protecciones exigen más pruebas de ser humano—, pero resuelve la mayoría.<br>
+        Las comillas alrededor de la URL evitan que caracteres como <code>&amp;</code> o <code>?</code> los interprete tu terminal en vez de curl.<br><br>
+        <b>Nota Windows:</b> en PowerShell escribe <code>curl.exe</code> (con el .exe), porque <code>curl</code> a secas es un alias de otra cosa.
+      </div>
+    </details>
+  </section>
+
+  <!-- PASO 2: pegar la salida -->
+  <section class="panel">
+    <h2><span class="paso-num">2</span> Pega aquí lo que devolvió curl</h2>
+    <textarea id="salida" spellcheck="false" placeholder="HTTP/2 301&#10;location: https://...&#10;..."></textarea>
+    <div class="botones">
+      <button id="btnAnalizar" class="btn-pri">Analizar la cadena</button>
+      <button id="btnEjemplo" class="btn-sec">Cargar ejemplo</button>
+      <button id="btnLimpiar" class="btn-sec">Limpiar</button>
+    </div>
+  </section>
+
+  <!-- PASO 3: resultado -->
+  <section id="resultado" class="panel">
+    <h2><span class="paso-num">3</span> El recorrido del enlace</h2>
+    <div id="cadena"></div>
+    <div id="banderas"></div>
+    <details>
+      <summary>¿Qué significan los códigos 301, 302, 307…?</summary>
+      <div class="cuerpo">
+        Los códigos <b>3xx</b> son redirecciones: el servidor responde "no estoy aquí, ve a esta otra dirección" (cabecera <code>Location</code>).<br><br>
+        <code>301</code> / <code>308</code> — movida <b>permanente</b>. Típica de acortadores y migraciones de dominio.<br>
+        <code>302</code> / <code>307</code> — movida <b>temporal</b>. La favorita de los kits de phishing, porque les permite cambiar el destino en cualquier momento sin tocar el enlace corto ya repartido.<br>
+        <code>303</code> — "ve allí con una petición GET". Rara en este contexto.<br><br>
+        Y los finales de cadena: <code>200</code> — página entregada, fin del viaje. <code>403</code>/<code>404</code>/<code>410</code> — bloqueado, no existe o retirado (los acortadores desactivan enlaces denunciados: un 404 aquí puede significar que el fraude ya fue cazado). <code>5xx</code> — el servidor destino está roto o rechazando.
+      </div>
+    </details>
+  </section>
+
+  <footer>Herramienta educativa · El análisis ocurre en tu navegador; la única conexión a internet la hace curl cuando TÚ lo ejecutas.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* Acortadores conocidos (misma lista base que el detector de URLs) */
+const ACORTADORES = new Set(["bit.ly","tinyurl.com","t.co","goo.gl","ow.ly","is.gd","buff.ly",
+  "cutt.ly","rebrand.ly","shorturl.at","rb.gy","t.ly","tiny.cc","lnkd.in","s.id","v.gd",
+  "qr.ae","soo.gd","short.io","bl.ink","zpr.io"]);
+
+const CODIGOS = {
+  301:["bg-azul","Redirección permanente"], 308:["bg-azul","Redirección permanente"],
+  302:["bg-ambar","Redirección temporal"],  307:["bg-ambar","Redirección temporal"],
+  303:["bg-azul","Redirección (ver otro)"],
+  200:["bg-verde","Página entregada"],
+  403:["bg-rojo","Acceso prohibido"], 404:["bg-rojo","No existe"], 410:["bg-rojo","Retirado"],
+};
+function infoCodigo(c){
+  if (CODIGOS[c]) return CODIGOS[c];
+  if (c>=500) return ["bg-rojo","Error del servidor"];
+  if (c>=400) return ["bg-rojo","Error "+c];
+  if (c>=300) return ["bg-ambar","Redirección "+c];
+  return ["bg-gris","Código "+c];
+}
+function dominioDeURL(u){
+  try { return new URL(u).hostname.toLowerCase().replace(/^www\./,""); } catch(e){ return null; }
+}
+function registrable(dom){
+  if (!dom) return null;
+  const et = dom.split(".");
+  return et.length<=2 ? dom : et.slice(-2).join(".");
+}
+function escaparHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ============ PASO 1: generar el comando ============ */
+const inputURL = document.getElementById("urlCorta");
+inputURL.addEventListener("input", ()=>{
+  const v = inputURL.value.trim();
+  const caja = document.getElementById("cajaComando");
+  if (!v){ caja.style.display="none"; return; }
+  const conEsquema = /^https?:\/\//i.test(v) ? v : "https://"+v;
+  /* Saneado básico: comillas dentro de la URL romperían el comando */
+  const limpia = conEsquema.replace(/["'`\\]/g,"");
+  document.getElementById("txtComando").textContent = 'curl -sIL --max-redirs 10 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/128.0" "'+limpia+'"';
+  caja.style.display="block";
+});
+document.getElementById("btnCopiarCmd").addEventListener("click", ()=>{
+  const txt = document.getElementById("txtComando").textContent;
+  copiar(txt, document.getElementById("btnCopiarCmd"));
+});
+function copiar(txt, btn){
+  const listo = ()=>{ const t=btn.textContent; btn.textContent="✓ Copiado"; setTimeout(()=>btn.textContent=t,1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(listo).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); document.body.removeChild(ta); listo();
+  }
+}
+
+/* ============ PASO 2-3: parsear salida de curl -sIL ============
+   La salida son BLOQUES de cabeceras, uno por respuesta:
+     HTTP/2 301
+     location: https://...
+     (línea en blanco)
+     HTTP/2 200
+     ...
+   Troceamos por cada línea que empiece por "HTTP/". */
+function parsearCurl(raw){
+  const bloques = [];
+  let actual = null;
+  for (const linea of raw.replace(/\r\n/g,"\n").split("\n")){
+    const m = linea.match(/^HTTP\/[0-9.]+\s+(\d{3})/i);
+    if (m){
+      actual = {codigo: parseInt(m[1],10), location:null, server:null, tipo:null};
+      bloques.push(actual);
+      continue;
+    }
+    if (!actual) continue;
+    const h = linea.match(/^([A-Za-z\-]+):\s*(.*)$/);
+    if (!h) continue;
+    const nombre = h[1].toLowerCase(), valor = h[2].trim();
+    if (nombre==="location") actual.location = valor;
+    else if (nombre==="server") actual.server = valor;
+    else if (nombre==="content-type") actual.tipo = valor.split(";")[0];
+  }
+  return bloques;
+}
+
+function analizar(){
+  const raw = document.getElementById("salida").value;
+  if (!raw.trim()){ alert("Pega primero la salida de curl."); return; }
+  const bloques = parsearCurl(raw);
+  const cadena = document.getElementById("cadena");
+  const banderasDiv = document.getElementById("banderas");
+  cadena.innerHTML=""; banderasDiv.innerHTML="";
+  const banderas = [];
+  const bandera = (nivel,icono,html)=>banderas.push({nivel,icono,html});
+
+  if (!bloques.length){
+    cadena.innerHTML = "<div class='bandera b-ambar'><span class='icono'>!</span><span>No reconozco esto como salida de <code>curl -sIL</code>. Debe empezar por líneas tipo <code>HTTP/2 301</code>. Si curl no mostró nada, puede que el dominio no exista o que tu red bloquee la conexión.</span></div>";
+    document.getElementById("resultado").style.display="block";
+    return;
+  }
+
+  /* Reconstruir las URLs de cada salto. La primera es la que escribió
+     el usuario en el paso 1 (si la puso); las siguientes salen de Location.
+     Location puede ser RELATIVA ("/destino"): se resuelve contra la anterior. */
+  const urlInicial = inputURL.value.trim()
+    ? (/^https?:\/\//i.test(inputURL.value.trim()) ? inputURL.value.trim() : "https://"+inputURL.value.trim())
+    : null;
+  const urls = [urlInicial];
+  for (let i=0;i<bloques.length-1;i++){
+    const loc = bloques[i].location;
+    if (!loc){ urls.push(null); continue; }
+    try { urls.push(new URL(loc, urls[i] || "https://desconocido.invalido").href); }
+    catch(e){ urls.push(loc); }
+  }
+
+  const dominios = [];
+  bloques.forEach((b,i)=>{
+    const url = urls[i];
+    const dom = url ? dominioDeURL(url) : null;
+    if (dom) dominios.push(dom);
+    const esUltimo = i === bloques.length-1;
+    const [claseBadge, textoCodigo] = infoCodigo(b.codigo);
+    const esAcort = dom && ACORTADORES.has(dom);
+
+    const div = document.createElement("div");
+    let claseSalto = "salto";
+    if (esAcort) claseSalto += " acortador";
+    if (esUltimo) claseSalto += (b.codigo===200 ? " final-ok" : b.codigo>=400 ? " final-mal" : "");
+    div.className = claseSalto;
+    div.innerHTML =
+      "<div class='cab'>"+
+        "<span class='badge bg-gris'>Salto "+(i+1)+(esUltimo?" · FINAL":"")+"</span>"+
+        "<span class='badge "+claseBadge+"'>"+b.codigo+" · "+textoCodigo+"</span>"+
+        (esAcort ? "<span class='badge bg-violeta'>Acortador conocido</span>" : "")+
+      "</div>"+
+      "<div class='url'>"+escaparHTML(url || "(URL de este salto no reconstruible — pon el enlace en el paso 1)")+"</div>"+
+      ((b.server||b.tipo) ? "<div class='nota'>"+(b.server?"servidor: "+escaparHTML(b.server):"")+(b.server&&b.tipo?" · ":"")+(b.tipo?"contenido: "+escaparHTML(b.tipo):"")+"</div>" : "");
+    cadena.appendChild(div);
+
+    if (!esUltimo){
+      const f = document.createElement("div");
+      f.className="flecha";
+      f.innerHTML = "↓ <span>redirige a</span>";
+      cadena.appendChild(f);
+    }
+  });
+
+  /* ---------- Banderas ---------- */
+  const nRedirs = bloques.filter(b=>b.codigo>=300 && b.codigo<400).length;
+  const finalURL = urls[urls.length-1];
+  const finalDom = finalURL ? dominioDeURL(finalURL) : null;
+  const final = bloques[bloques.length-1];
+
+  if (finalURL){
+    bandera(final.codigo===200 ? "verde" : "ambar", "◎",
+      "<b>Destino real:</b><span class='url-destino'>"+escaparHTML(finalURL)+"</span>"+
+      (finalDom ? "Dominio <b>"+escaparHTML(finalDom)+"</b>. Copia esta URL en el <b>detector de URLs</b> (la otra app) para el análisis de suplantación completo: ese es su trabajo, no el de esta." : ""));
+  }
+  if (nRedirs >= 3){
+    bandera("ambar","!","Cadena larga: "+nRedirs+" redirecciones. Las campañas maliciosas encadenan saltos para despistar filtros y rotar destinos. Legítimo a veces (rastreadores de marketing hacen lo mismo), pero es señal de vigilancia.");
+  }
+  const acortEnCadena = dominios.filter(d=>ACORTADORES.has(d));
+  if (acortEnCadena.length >= 2){
+    bandera("rojo","✕","<b>Acortador dentro de acortador</b> ("+acortEnCadena.map(escaparHTML).join(" → ")+"). Casi nadie legítimo hace esto: es la técnica clásica para que el primer acortador no pueda inspeccionar ni bloquear el destino real.");
+  }
+  const bajaHTTP = bloques.some((b,i)=>b.location && b.location.toLowerCase().startsWith("http://"));
+  if (bajaHTTP){
+    bandera("rojo","✕","Algún salto redirige a <code>http://</code> sin cifrar: lo que hagas en esa página viaja en claro. Los sitios serios no degradan a HTTP en 2026.");
+  }
+  if (finalDom && /^\d{1,3}(\.\d{1,3}){3}$/.test(finalDom)){
+    bandera("rojo","✕","El destino final es una <b>IP cruda</b>, sin dominio. Rarísimo en servicios legítimos, habitual en infraestructura desechable de ataque.");
+  }
+  const servidorFinal = (final.server||"").toLowerCase();
+  if (final.codigo===403){
+    const pistaCF = servidorFinal.includes("cloudflare");
+    bandera("ambar","!","La cadena termina en <b>403 · Prohibido</b>, pero ojo: <b>esto NO suele significar que el enlace esté muerto</b>. Lo más habitual es que el servidor"+
+      (pistaCF ? " (protegido por <b>Cloudflare</b>, como ves arriba)" : "")+
+      " haya rechazado la petición por venir de <code>curl</code> en vez de un navegador de verdad. La misma página puede abrir sin problema en tu navegador. Para descartarlo, vuelve al paso 1: el comando ya incluye el disfraz <code>-A</code>, pero si algún servidor sigue devolviendo 403, es esta protección antibot, no el enlace. Fíjate en el dominio de destino y en si los parámetros parecen legítimos antes de dar nada por muerto.");
+  } else if (final.codigo===404 || final.codigo===410){
+    bandera("azul","i","La cadena muere en un <b>"+final.codigo+"</b> (no existe / retirado). En un dominio que reconozcas, lo más habitual es de lo más inocente: la página <b>caducó o se movió</b> — típico en enlaces cortos antiguos de campañas de marketing, sorteos o promociones ya terminadas. Solo si el dominio de destino ya parecía sospechoso cobra fuerza la otra lectura: que el acortador o el hosting hayan <b>desactivado el enlace por denuncias</b>, en cuyo caso llegarías tarde al fraude — la mejor noticia posible. Mira el dominio para saber en cuál de los dos casos estás.");
+  } else if (final.codigo>=400){
+    bandera("azul","i","La cadena termina en un <b>"+final.codigo+"</b>. Puede ser un enlace caído, un bloqueo del servidor, o una protección que rechaza a curl. No lo tomes como veredicto: contrasta el dominio de destino.");
+  }
+  if (final.codigo===200 && final.tipo==="text/html"){
+    bandera("azul","i","<b>Límite honesto:</b> curl ve las redirecciones HTTP, pero una página puede redirigir OTRA VEZ con JavaScript o <code>&lt;meta refresh&gt;</code> una vez cargada, y eso aquí no se ve. Si el destino \"final\" parece una página vacía o rara, sospecha de un salto extra invisible.");
+  }
+  if (!banderas.length){
+    bandera("verde","✓","Cadena corta y limpia. Recuerda igualmente pasar el destino final por el detector de URLs.");
+  }
+
+  banderas.forEach(b=>{
+    const div=document.createElement("div");
+    div.className="bandera b-"+b.nivel;
+    div.innerHTML="<span class='icono'>"+b.icono+"</span><span class='texto'>"+b.html+"</span>";
+    banderasDiv.appendChild(div);
+  });
+  document.getElementById("resultado").style.display="block";
+}
+
+document.getElementById("btnAnalizar").addEventListener("click", analizar);
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("salida").value="";
+  document.getElementById("resultado").style.display="none";
+  document.getElementById("salida").focus();
+});
+
+/* Ejemplo sintético: bit.ly → acortador secundario → destino con IP y HTTP plano */
+document.getElementById("btnEjemplo").addEventListener("click", ()=>{
+  inputURL.value = "https://bit.ly/3xEjemplo";
+  inputURL.dispatchEvent(new Event("input"));
+  document.getElementById("salida").value =
+`HTTP/2 301
+server: cloudflare
+location: https://cutt.ly/promo-x9
+
+HTTP/2 302
+server: nginx
+location: http://185.220.101.44/login/santander/
+
+HTTP/1.1 200
+server: Apache/2.4.41
+content-type: text/html`;
+  analizar();
+});
+</script>
+</body>
+</html>
