@@ -1,5 +1,3 @@
-# kit-triaje-phishing
-[README.md](https://github.com/user-attachments/files/31184249/README.md)
 # Kit de Triaje de Phishing
 
 Cuatro herramientas de análisis para decidir, en minutos y sin depender de servicios externos, si un correo sospechoso es un fraude.
